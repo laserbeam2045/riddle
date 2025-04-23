@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/solid";
 import useSound from "use-sound";
 
 // 謎解きのデータ型定義
