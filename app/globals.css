@@ -20,7 +20,17 @@
 }
 
 body {
-  background: var(--background);
+  /* background: var(--background); */ /* Tailwindのクラスで制御するためコメントアウト */
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Apply font family from the mock */
+  font-family: 'Hiragino Kaku Gothic ProN', 'メイリオ', sans-serif;
+  min-height: 100vh; /* Ensure body takes full height */
+  /* Add a subtle gradient background */
+  @apply bg-gradient-to-br from-blue-50 via-white to-purple-50;
+}
+
+button {
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 0.75rem 1.2rem;
 }
