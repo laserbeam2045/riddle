@@ -4,6 +4,8 @@
 
 import { useState, useEffect } from "react";
 import useSound from "use-sound";
+import Confetti from "react-confetti";
+import { useWindowSize } from "react-use";
 
 // 謎解きのデータ型定義
 interface Question {
@@ -43,9 +45,10 @@ function useQuizData() {
   return { quizData, loading, error };
 }
 
-const stageNames = ["なぞなぞ", "なぞなぞ２", "なぞなぞ３", "文学", "地理", "音楽"];
+const stageNames = ["謎レベル１", "謎レベル２", "謎レベル３", "謎レベル４"];
 
 export default function Home() {
+  const { width, height } = useWindowSize();
   const [currentStage, setCurrentStage] = useState<number | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState("");
@@ -61,11 +64,20 @@ export default function Home() {
   const [showResults, setShowResults] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [endTime, setEndTime] = useState<number | null>(null);
-  const [answers, setAnswers] = useState<{question: string; isCorrect: boolean; userAnswer: string; correctAnswer: string}[]>([]);
+  const [answers, setAnswers] = useState<
+    {
+      question: string;
+      isCorrect: boolean;
+      userAnswer: string;
+      correctAnswer: string;
+    }[]
+  >([]);
   const [attemptCount, setAttemptCount] = useState(0); // 回答試行回数
-  
+
   // 画面表示状態
-  const [screen, setScreen] = useState<'home' | 'quiz-list' | 'game' | 'results'>('home');
+  const [screen, setScreen] = useState<
+    "home" | "quiz-list" | "game" | "results"
+  >("home");
 
   const { quizData, loading, error } = useQuizData();
   const questions = currentStage ? quizData[currentStage] || [] : [];
@@ -80,13 +92,13 @@ export default function Home() {
   // 経過時間計測用のタイマー
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    
+
     if (timerActive) {
       interval = setInterval(() => {
-        setElapsedTime(prev => prev + 1);
+        setElapsedTime((prev) => prev + 1);
       }, 1000);
     }
-    
+
     return () => clearInterval(interval);
   }, [timerActive]);
 
@@ -98,12 +110,12 @@ export default function Home() {
     setIsAnswered(false);
     setShowHint(false);
     setAnswers([]);
-    setScreen('game');
+    setScreen("game");
     setShowResults(false);
     setStartTime(Date.now());
     setElapsedTime(0);
     setAttemptCount(0);
-    
+
     // タイマー開始
     setTimerActive(true);
   };
@@ -111,9 +123,9 @@ export default function Home() {
   const handleAnswerSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!currentQuestion) return;
-    
+
     // 回答試行回数を増やす
-    setAttemptCount(prev => prev + 1);
+    setAttemptCount((prev) => prev + 1);
 
     const correctAnswers = currentQuestion.answers;
     const userAnswerTrimmed = userAnswer.trim();
@@ -135,7 +147,10 @@ export default function Home() {
         .replace(/\s+/g, "");
 
       // 正解の文字列が回答に含まれているかチェック
-      return normalizedUserAnswer.includes(normalizedAns) || normalizedAns.includes(normalizedUserAnswer);
+      return (
+        normalizedUserAnswer.includes(normalizedAns) ||
+        normalizedAns.includes(normalizedUserAnswer)
+      );
     });
 
     // 回答履歴に追加（正解時のみ）
@@ -144,10 +159,10 @@ export default function Home() {
         question: currentQuestion.question,
         userAnswer: userAnswerTrimmed,
         correctAnswer: correctAnswers[0],
-        isCorrect: true
+        isCorrect: true,
       };
-      setAnswers(prev => [...prev, newAnswer]);
-      
+      setAnswers((prev) => [...prev, newAnswer]);
+
       // 正解したら時間経過を止める
       setTimerActive(false);
     }
@@ -177,7 +192,7 @@ export default function Home() {
       setIsAnswered(false);
       setShowHint(false);
       setAttemptCount(0);
-      
+
       // 問題が変わったら時間をリセットして再開
       setElapsedTime(0);
       setTimerActive(true);
@@ -185,7 +200,7 @@ export default function Home() {
       // 謎解き完了時
       setEndTime(Date.now());
       setShowResults(true);
-      setScreen('results');
+      setScreen("results");
       setTimerActive(false);
     }
   };
@@ -210,7 +225,7 @@ export default function Home() {
     setShowHint(false);
     setShowResults(false);
     setAnswers([]);
-    setScreen('home');
+    setScreen("home");
     setTimerActive(false);
   };
 
@@ -230,28 +245,36 @@ export default function Home() {
     setAnswers([]);
     setStartTime(Date.now());
     setEndTime(null);
-    setScreen('game');
+    setScreen("game");
     setElapsedTime(0);
     setAttemptCount(0);
-    
+
     // タイマー開始
     setTimerActive(true);
   };
 
   // 正解数の計算
-  const correctAnswersCount = answers.filter(answer => answer.isCorrect).length;
-  
+  const correctAnswersCount = answers.filter(
+    (answer) => answer.isCorrect
+  ).length;
+
   // 経過時間の計算（秒）
-  const totalTime = startTime && endTime ? Math.floor((endTime - startTime) / 1000) : elapsedTime;
-  
+  const totalTime =
+    startTime && endTime
+      ? Math.floor((endTime - startTime) / 1000)
+      : elapsedTime;
+
   // スコアのパーセンテージ計算
-  const scorePercentage = questions.length > 0 ? Math.round((correctAnswersCount / questions.length) * 100) : 0;
+  const scorePercentage =
+    questions.length > 0
+      ? Math.round((correctAnswersCount / questions.length) * 100)
+      : 0;
 
   // 分と秒に整形する関数
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? '0' + secs : secs}`;
+    return `${mins}:${secs < 10 ? "0" + secs : secs}`;
   };
 
   return (
@@ -259,8 +282,8 @@ export default function Home() {
       {/* ヘッダー */}
       <header className="bg-gradient-to-r from-purple-800 to-blue-800 py-6 px-4 shadow-lg">
         <div className="container mx-auto flex justify-between items-center">
-          <div 
-            className="text-2xl font-bold tracking-wider cursor-pointer" 
+          <div
+            className="text-2xl font-bold tracking-wider cursor-pointer"
             onClick={handleReturnToSelection}
           >
             RIDDLE MASTER
@@ -282,17 +305,17 @@ export default function Home() {
 
       <main className="flex flex-grow container mx-auto px-4 pt-8">
         {/* ホーム画面 */}
-        {screen === 'home' && (
+        {screen === "home" && (
           <div className="hero text-center py-12">
             <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-pink-500 to-purple-600 inline-block text-transparent bg-clip-text">
               頭脳の限界を超えろ！
             </h1>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
-              様々なカテゴリーの問題に挑戦して、知識を広げ、ランキングでトップを目指そう。友達と競い合って、謎解き王の称号を手に入れよう！
+              様々なカテゴリーの問題に挑戦して、リドルマスターの称号を手に入れよう！
             </p>
-            <button 
+            <button
               className="bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 px-8 rounded-full font-bold uppercase tracking-wider shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
-              onClick={() => setScreen('quiz-list')}
+              onClick={() => setScreen("quiz-list")}
             >
               いますぐプレイ
             </button>
@@ -300,7 +323,7 @@ export default function Home() {
         )}
 
         {/* 謎解きリスト画面 */}
-        {screen === 'quiz-list' && (
+        {screen === "quiz-list" && (
           <div className="quiz-container">
             {/* <div className="quiz-header flex justify-between items-center mb-8">
               <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 inline-block text-transparent bg-clip-text">
@@ -327,10 +350,10 @@ export default function Home() {
                 {Object.keys(quizData).map((stageKey) => {
                   const stageNumber = parseInt(stageKey);
                   const stageName = stageNames[stageNumber - 1];
-                  
+
                   return (
-                    <div 
-                      key={stageKey} 
+                    <div
+                      key={stageKey}
                       className="quiz-card bg-gray-800/50 rounded-xl overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 duration-300"
                     >
                       <div className="h-40 bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center">
@@ -343,7 +366,8 @@ export default function Home() {
                           <div>難易度: 普通</div>
                         </div>
                         <p className="quiz-description text-gray-300 mb-4">
-                          {stageName}に関する様々な問題に挑戦しよう。あなたの知恵をテストします！
+                          {stageName}
+                          に関する様々な問題に挑戦しよう。あなたの知恵をテストします！
                         </p>
                         <div className="quiz-footer flex justify-between items-center">
                           <div className="difficulty-meter flex items-center">
@@ -353,7 +377,7 @@ export default function Home() {
                             <span className="bg-gray-500 inline-block w-2 h-2 rounded-full mr-1"></span>
                             <span className="bg-gray-500 inline-block w-2 h-2 rounded-full"></span>
                           </div>
-                          <button 
+                          <button
                             className="bg-gradient-to-r from-pink-500 to-purple-600 text-white py-2 px-5 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
                             onClick={() => handleStageSelect(stageNumber)}
                           >
@@ -370,16 +394,31 @@ export default function Home() {
         )}
 
         {/* ゲーム画面 */}
-        {screen === 'game' && currentStage && currentQuestion && (
+        {screen === "game" && currentStage && currentQuestion && (
           <div className="flex-grow-3 flex justify-between flex-col game-screen bg-gray-800/70 rounded-2xl p-4 max-w-4xl mx-auto shadow-2xl">
             <div className="game-header flex flex-wrap justify-between items-center mb-4 pb-4 border-b border-gray-700">
-              <h2 className="game-title text-2xl font-bold grow-10">{stageNames[currentStage - 1]}</h2>
+              <h2 className="game-title text-2xl font-bold grow-10">
+                {stageNames[currentStage - 1]}
+              </h2>
               <div className="game-info flex items-center justify-between grow-1 space-x-4">
                 <div className="timer flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2 text-yellow-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
-                  <span className="time-left text-sm">{formatTime(elapsedTime)}</span>
+                  <span className="time-left text-sm">
+                    {formatTime(elapsedTime)}
+                  </span>
                 </div>
                 <div className="question-progress text-sm text-gray-400">
                   {currentQuestionIndex + 1}/{questions.length}
@@ -390,19 +429,34 @@ export default function Home() {
                     onClick={handleHintToggle}
                     className="bg-amber-600/80 text-white py-1 px-3 rounded-lg text-sm transition hover:bg-amber-700 active:scale-95 flex items-center"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
                     ヒント
                   </button>
                 )}
               </div>
             </div>
-            
+
             <div className="question-container grow-3 flex flex-col justify-between">
-              <div className="question-number text-gray-400 mb-2">質問 {currentQuestionIndex + 1}</div>
-              <div className="question-text text-xl whitespace-pre-line">{currentQuestion.question}</div>
-              
+              <div className="question-number text-gray-400 mb-2">
+                質問 {currentQuestionIndex + 1}
+              </div>
+              <div className="question-text text-xl whitespace-pre-line">
+                {currentQuestion.question}
+              </div>
+
               {currentQuestion.imageUrl && (
                 <div className="image-container flex justify-center">
                   <img
@@ -412,10 +466,16 @@ export default function Home() {
                   />
                 </div>
               )}
-              
+
               <div className="feedback text-center h-8 font-bold grow-4 flex items-center justify-center">
                 {feedback.message && (
-                  <div className={`text-lg font-semibold ${feedback.type === "correct" ? "text-green-500" : "text-red-500"}`}>
+                  <div
+                    className={`text-lg font-semibold ${
+                      feedback.type === "correct"
+                        ? "text-green-500"
+                        : "text-red-500"
+                    }`}
+                  >
                     {feedback.message}
                   </div>
                 )}
@@ -460,20 +520,26 @@ export default function Home() {
                 <div className="">
                   {currentQuestion.explanation && (
                     <div className="explanation bg-indigo-900/30 border-l-4 border-indigo-500 pl-4 pr-2 py-4 rounded-lg">
-                      <h4 className="font-bold text-indigo-300 text-xl mb-2">解説:</h4>
-                      <pre className="text-gray-300 whitespace-pre-line text-xs">{currentQuestion.explanation}</pre>
+                      <h4 className="font-bold text-indigo-300 text-xl mb-2">
+                        解説:
+                      </h4>
+                      <pre className="text-gray-300 whitespace-pre-line text-xs">
+                        {currentQuestion.explanation}
+                      </pre>
                     </div>
                   )}
                 </div>
               )}
-              
+
               <div className="action-buttons flex justify-end mt-4">
                 {isAnswered && (
                   <button
                     onClick={handleNextQuestion}
                     className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2 px-6 rounded-lg transition-all duration-200 hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 active:scale-95"
                   >
-                    {currentQuestionIndex < questions.length - 1 ? "次の問題" : "結果を見る"}
+                    {currentQuestionIndex < questions.length - 1
+                      ? "次の問題"
+                      : "結果を見る"}
                   </button>
                 )}
               </div>
@@ -482,44 +548,54 @@ export default function Home() {
         )}
 
         {/* 結果画面 */}
-        {screen === 'results' && (
+        {screen === "results" && (
           <div className="results-screen bg-gray-800/70 rounded-2xl p-8 max-w-4xl mx-auto shadow-2xl">
-            <h2 className="results-title text-3xl font-bold text-center mb-8">謎解き結果</h2>
-            
-            <div className="score-circle w-48 h-48 rounded-full border-8 border-indigo-600 mx-auto mb-8 flex items-center justify-center">
+            <h2 className="results-title text-3xl font-bold text-center mb-8">
+              謎解き結果
+            </h2>
+
+            <div className="score-circle w-28 h-28 rounded-full border-8 border-indigo-600 mx-auto mb-8 flex items-center justify-center">
               <div className="score-inner text-center">
-                <div className="score-value text-5xl font-bold text-indigo-400 mb-2">{scorePercentage}%</div>
+                <div className="score-value text-2xl font-bold text-indigo-400 mb-2">
+                  {scorePercentage}%
+                </div>
                 <div className="score-label text-sm text-gray-400">スコア</div>
               </div>
             </div>
-            
+
             <div className="score-details flex justify-around mb-10 text-center">
               <div className="detail-item">
-                <div className="detail-value text-2xl font-bold text-green-500 mb-1">{correctAnswersCount}</div>
+                <div className="detail-value text-2xl font-bold text-green-500 mb-1">
+                  {correctAnswersCount}
+                </div>
                 <div className="detail-label text-sm text-gray-400">正解</div>
               </div>
               <div className="detail-item">
-                <div className="detail-value text-2xl font-bold text-red-500 mb-1">{questions.length - correctAnswersCount}</div>
+                <div className="detail-value text-2xl font-bold text-red-500 mb-1">
+                  {questions.length - correctAnswersCount}
+                </div>
                 <div className="detail-label text-sm text-gray-400">不正解</div>
               </div>
               <div className="detail-item">
-                <div className="detail-value text-2xl font-bold text-yellow-500 mb-1">{formatTime(totalTime)}</div>
-                <div className="detail-label text-sm text-gray-400">所要時間</div>
+                <div className="detail-value text-2xl font-bold text-yellow-500 mb-1">
+                  {formatTime(totalTime)}
+                </div>
+                <div className="detail-label text-sm text-gray-400">
+                  所要時間
+                </div>
               </div>
             </div>
-            
+
             <div className="result-message text-center text-xl mb-10 text-gray-200">
-              {scorePercentage >= 80 ? (
-                "すばらしい！あなたは本当のリドルマスターです！"
-              ) : scorePercentage >= 60 ? (
-                "よくできました！もう少しで完璧です！"
-              ) : scorePercentage >= 40 ? (
-                "悪くない結果です。もっと頑張りましょう！"
-              ) : (
-                "まだまだ勉強が必要ですね。もう一度挑戦しましょう！"
-              )}
+              {scorePercentage >= 80
+                ? "すばらしい！あなたは本当のリドルマスターです！"
+                : scorePercentage >= 60
+                ? "よくできました！もう少しで完璧です！"
+                : scorePercentage >= 40
+                ? "悪くない結果です。もっと頑張りましょう！"
+                : "まだまだ勉強が必要ですね。もう一度挑戦しましょう！"}
             </div>
-            
+
             <div className="action-buttons flex justify-center space-x-4">
               <button
                 onClick={handleRetry}
@@ -534,27 +610,37 @@ export default function Home() {
                 ホームに戻る
               </button>
             </div>
+            <Confetti
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                zIndex: 9999,
+              }}
+              run={true}
+              width={width}
+              height={height}
+              numberOfPieces={500}
+              recycle={false}
+              gravity={0.3}
+            />
           </div>
         )}
       </main>
 
-      <footer className="bg-gray-800 py-8 mt-8 text-center">
-        {/* <div className="footer-links flex justify-center space-x-8 mb-6">
-          <a href="#" className="text-gray-400 hover:text-white transition-colors">会社情報</a>
-          <a href="#" className="text-gray-400 hover:text-white transition-colors">利用規約</a>
-          <a href="#" className="text-gray-400 hover:text-white transition-colors">プライバシーポリシー</a>
-          <a href="#" className="text-gray-400 hover:text-white transition-colors">お問い合わせ</a>
-        </div> */}
+      {/* <footer className="bg-gray-800 py-8 mt-8 text-center">
         <p className="text-gray-500 text-sm"> 2025 RIDDLE MASTER All Rights Reserved.</p>
-      </footer>
+      </footer> */}
 
       {/* ヒントモーダル */}
       {showModal && currentQuestion && currentQuestion.hint && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 overscroll-none overflow-hidden"
           onClick={handleHintToggle}
         >
-          <div 
+          <div
             className="bg-white/80 backdrop-blur-md rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl border border-white/50 transform transition-all duration-300 animate-fadeIn"
             onClick={(e) => e.stopPropagation()}
           >
