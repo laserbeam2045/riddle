@@ -1,14 +1,20 @@
+"use client";
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; // useRef を追加
 import useSound from "use-sound";
-import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
+import HomeScreen from "../components/HomeScreen"; // 追加
+import QuizListScreen from "../components/QuizListScreen"; // 追加
+import GameScreen from "../components/GameScreen"; // 追加
+import ResultsScreen from "../components/ResultsScreen"; // 追加
+import HintModal from "../components/HintModal"; // HintModal をインポート
 
-// 謎解きのデータ型定義
-interface Question {
+// 謎解きのデータ型定義 (エクスポート)
+export interface Question {
   question: string;
   imageUrl?: string;
   answers: string[];
@@ -16,7 +22,7 @@ interface Question {
   explanation?: string;
 }
 
-interface QuizData {
+export interface QuizData {
   [key: number]: Question[];
 }
 
@@ -47,6 +53,9 @@ function useQuizData() {
 
 const stageNames = ["謎レベル１", "謎レベル２", "謎レベル３", "謎レベル４"];
 
+// LocalStorageのキー
+const COMPLETED_STAGES_KEY = "riddlemaster_completed_stages";
+
 export default function Home() {
   const { width, height } = useWindowSize();
   const [currentStage, setCurrentStage] = useState<number | null>(null);
@@ -73,6 +82,7 @@ export default function Home() {
     }[]
   >([]);
   const [attemptCount, setAttemptCount] = useState(0); // 回答試行回数
+  const [completedStages, setCompletedStages] = useState<number[]>([]); // クリア済みステージ
 
   // 画面表示状態
   const [screen, setScreen] = useState<
@@ -84,9 +94,51 @@ export default function Home() {
   const currentQuestion = questions[currentQuestionIndex];
 
   const sounds = {
-    correct: useSound("/sounds/correct.mp3", { volume: 0.5 })[0],
-    incorrect: useSound("/sounds/incorrect.mp3", { volume: 0.5 })[0],
-    cursor: useSound("/sounds/sound01.mp3", { volume: 0.5 })[0],
+    phone: useSound("/sounds/phone.mp3", {
+      volume: 0.05,
+      playbackRate: 0.75,
+    })[0],
+    success: useSound("/sounds/success.mp3", {
+      volume: 0.05,
+      playbackRate: 0.75,
+    })[0],
+    correct: useSound("/sounds/correct.mp3", {
+      volume: 0.05,
+      playbackRate: 0.75,
+    })[0],
+    incorrect: useSound("/sounds/incorrect.mp3", {
+      volume: 0.05,
+      playbackRate: 0.75,
+    })[0],
+    cursor: useSound("/sounds/sound01.mp3", {
+      volume: 0.05,
+      playbackRate: 0.75,
+    })[0],
+  };
+
+  // LocalStorageからクリア済みステージを読み込む
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const savedStages = localStorage.getItem(COMPLETED_STAGES_KEY);
+        if (savedStages) {
+          setCompletedStages(JSON.parse(savedStages));
+        }
+      } catch (e) {
+        console.error("Failed to load completed stages from LocalStorage", e);
+      }
+    }
+  }, []);
+
+  // クリア済みステージをLocalStorageに保存
+  const saveCompletedStages = (stages: number[]) => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(COMPLETED_STAGES_KEY, JSON.stringify(stages));
+      } catch (e) {
+        console.error("Failed to save completed stages to LocalStorage", e);
+      }
+    }
   };
 
   // 経過時間計測用のタイマー
@@ -103,6 +155,7 @@ export default function Home() {
   }, [timerActive]);
 
   const handleStageSelect = (stage: number) => {
+    sounds.phone();
     setCurrentStage(stage);
     setCurrentQuestionIndex(0);
     setUserAnswer("");
@@ -120,6 +173,133 @@ export default function Home() {
     setTimerActive(true);
   };
 
+  // この handleAnswerSubmit は後で修正されたものに置き換えられるため削除
+  // const handleAnswerSubmit = (e: React.FormEvent<HTMLFormElement>) => { ... };
+
+  const handleNextQuestion = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      sounds.phone();
+      setCurrentQuestionIndex((prev) => prev + 1);
+      setUserAnswer("");
+      setFeedback({ message: "", type: "" });
+      setIsAnswered(false);
+      setShowHint(false);
+      setAttemptCount(0);
+
+      // 問題が変わったら時間をリセットして再開
+      setElapsedTime(0);
+      setTimerActive(true);
+    } else {
+      // 謎解き完了時
+      sounds.success();
+      setEndTime(Date.now());
+      setShowResults(true);
+      setScreen("results");
+      setTimerActive(false);
+
+      // 全問題クリアした場合、ステージをクリア済みとして記録
+      if (
+        currentStage &&
+        correctAnswersCount === questions.length &&
+        !completedStages.includes(currentStage)
+      ) {
+        const newCompletedStages = [...completedStages, currentStage];
+        setCompletedStages(newCompletedStages);
+        saveCompletedStages(newCompletedStages);
+      }
+    }
+  };
+
+  const handlePrevQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex((prev) => prev - 1);
+      setUserAnswer("");
+      setFeedback({ message: "", type: "" });
+      setIsAnswered(false);
+      setShowHint(false);
+      setAttemptCount(0);
+    }
+  };
+
+  const handleReturnToSelection = () => {
+    sounds.phone();
+    setCurrentStage(null);
+    setCurrentQuestionIndex(0);
+    setUserAnswer("");
+    setFeedback({ message: "", type: "" });
+    setIsAnswered(false);
+    setShowHint(false);
+    setShowResults(false);
+    setAnswers([]);
+    setScreen("home");
+    setTimerActive(false);
+  };
+
+  const handleHintToggle = () => {
+    setShowModal(!showModal);
+    setShowHint(!showHint);
+  };
+
+  const handleRetry = () => {
+    // 現在のステージを再度プレイ
+    sounds.phone();
+    setCurrentQuestionIndex(0);
+    setUserAnswer("");
+    setFeedback({ message: "", type: "" });
+    setIsAnswered(false);
+    setShowHint(false);
+    setShowResults(false);
+    setAnswers([]);
+    setStartTime(Date.now());
+    setEndTime(null);
+    setScreen("game");
+    setElapsedTime(0);
+    setAttemptCount(0);
+
+    // タイマー開始
+    setTimerActive(true);
+  };
+
+  // 正解数の計算
+  const correctAnswersCount = answers.filter(
+    (answer) => answer.isCorrect
+  ).length;
+
+  // 経過時間の計算（秒）
+  const totalTime =
+    startTime && endTime
+      ? Math.floor((endTime - startTime) / 1000)
+      : elapsedTime;
+
+  // スコアのパーセンテージ計算
+  const scorePercentage =
+    questions.length > 0
+      ? Math.round((correctAnswersCount / questions.length) * 100)
+      : 0;
+
+  // 分と秒に整形する関数
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? "0" + secs : secs}`;
+  };
+
+  // スクロール用のref
+  const mainContentRef = useRef<HTMLDivElement>(null);
+
+  // 正解時にスクロールする関数
+  const scrollToBottom = () => {
+    mainContentRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+    // window.scrollTo({
+    //   top: document.documentElement.scrollHeight,
+    //   behavior: 'smooth'
+    // });
+  };
+
+  // handleAnswerSubmit 内で正解時に scrollToBottom を呼び出すように修正
   const handleAnswerSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!currentQuestion) return;
@@ -165,6 +345,8 @@ export default function Home() {
 
       // 正解したら時間経過を止める
       setTimerActive(false);
+      // 正解時にスクロール
+      setTimeout(scrollToBottom, 100); // 少し遅延させて実行
     }
 
     if (isCorrect) {
@@ -184,103 +366,10 @@ export default function Home() {
     }
   };
 
-  const handleNextQuestion = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex((prev) => prev + 1);
-      setUserAnswer("");
-      setFeedback({ message: "", type: "" });
-      setIsAnswered(false);
-      setShowHint(false);
-      setAttemptCount(0);
-
-      // 問題が変わったら時間をリセットして再開
-      setElapsedTime(0);
-      setTimerActive(true);
-    } else {
-      // 謎解き完了時
-      setEndTime(Date.now());
-      setShowResults(true);
-      setScreen("results");
-      setTimerActive(false);
-    }
-  };
-
-  const handlePrevQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex((prev) => prev - 1);
-      setUserAnswer("");
-      setFeedback({ message: "", type: "" });
-      setIsAnswered(false);
-      setShowHint(false);
-      setAttemptCount(0);
-    }
-  };
-
-  const handleReturnToSelection = () => {
-    setCurrentStage(null);
-    setCurrentQuestionIndex(0);
-    setUserAnswer("");
-    setFeedback({ message: "", type: "" });
-    setIsAnswered(false);
-    setShowHint(false);
-    setShowResults(false);
-    setAnswers([]);
-    setScreen("home");
-    setTimerActive(false);
-  };
-
-  const handleHintToggle = () => {
-    setShowModal(!showModal);
-    setShowHint(!showHint);
-  };
-
-  const handleRetry = () => {
-    // 現在のステージを再度プレイ
-    setCurrentQuestionIndex(0);
-    setUserAnswer("");
-    setFeedback({ message: "", type: "" });
-    setIsAnswered(false);
-    setShowHint(false);
-    setShowResults(false);
-    setAnswers([]);
-    setStartTime(Date.now());
-    setEndTime(null);
-    setScreen("game");
-    setElapsedTime(0);
-    setAttemptCount(0);
-
-    // タイマー開始
-    setTimerActive(true);
-  };
-
-  // 正解数の計算
-  const correctAnswersCount = answers.filter(
-    (answer) => answer.isCorrect
-  ).length;
-
-  // 経過時間の計算（秒）
-  const totalTime =
-    startTime && endTime
-      ? Math.floor((endTime - startTime) / 1000)
-      : elapsedTime;
-
-  // スコアのパーセンテージ計算
-  const scorePercentage =
-    questions.length > 0
-      ? Math.round((correctAnswersCount / questions.length) * 100)
-      : 0;
-
-  // 分と秒に整形する関数
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? "0" + secs : secs}`;
-  };
-
   return (
-    <div className="min-h-screen flex flex-col bg-gray-900 text-white">
+    <div className="min-h-dvh flex flex-col bg-gray-900 text-white">
       {/* ヘッダー */}
-      <header className="bg-gradient-to-r from-purple-800 to-blue-800 py-6 px-4 shadow-lg">
+      <header className="bg-gradient-to-r from-purple-800 to-blue-800 py-6 px-4 shadow-lg sticky top-0 z-10">
         <div className="container mx-auto flex justify-between items-center">
           <div
             className="text-2xl font-bold tracking-wider cursor-pointer"
@@ -303,387 +392,81 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="flex flex-grow container mx-auto px-4 pt-8">
-        {/* ホーム画面 */}
+      <main
+        ref={mainContentRef}
+        className="flex flex-grow container mx-auto px-4 py-8"
+      >
+        {/* 画面表示切り替え */}
         {screen === "home" && (
-          <div className="hero text-center py-12">
-            <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-pink-500 to-purple-600 inline-block text-transparent bg-clip-text">
-              頭脳の限界を超えろ！
-            </h1>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
-              様々なカテゴリーの問題に挑戦して、リドルマスターの称号を手に入れよう！
-            </p>
-            <button
-              className="bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 px-8 rounded-full font-bold uppercase tracking-wider shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
-              onClick={() => setScreen("quiz-list")}
-            >
-              いますぐプレイ
-            </button>
-          </div>
+          <HomeScreen
+            onStartQuiz={() => {
+              sounds.phone();
+              setScreen("quiz-list");
+            }}
+          />
         )}
-
-        {/* 謎解きリスト画面 */}
         {screen === "quiz-list" && (
-          <div className="quiz-container">
-            {/* <div className="quiz-header flex justify-between items-center mb-8">
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 inline-block text-transparent bg-clip-text">
-                トレンドの謎解き
-              </h2>
-              <div className="categories flex space-x-4">
-                <div className="category px-4 py-2 bg-white/10 rounded-full cursor-pointer transition-all hover:bg-white/20 hover:-translate-y-0.5 active">
-                  すべて
-                </div>
-                {stageNames.slice(0, 3).map((name, index) => (
-                  <div key={index} className="category px-4 py-2 bg-white/10 rounded-full cursor-pointer transition-all hover:bg-white/20 hover:-translate-y-0.5">
-                    {name}
-                  </div>
-                ))}
-              </div>
-            </div> */}
-
-            {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-              </div>
-            ) : (
-              <div className="quiz-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Object.keys(quizData).map((stageKey) => {
-                  const stageNumber = parseInt(stageKey);
-                  const stageName = stageNames[stageNumber - 1];
-
-                  return (
-                    <div
-                      key={stageKey}
-                      className="quiz-card bg-gray-800/50 rounded-xl overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 duration-300"
-                    >
-                      <div className="h-40 bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center">
-                        <div className="text-3xl font-bold">{stageName}</div>
-                      </div>
-                      <div className="quiz-content p-6">
-                        {/* <h3 className="text-xl font-bold mb-2">{stageName}</h3> */}
-                        <div className="quiz-meta flex justify-between text-gray-400 text-sm mb-3">
-                          <div>{quizData[stageNumber].length} 問</div>
-                          <div>難易度: 普通</div>
-                        </div>
-                        <p className="quiz-description text-gray-300 mb-4">
-                          {stageName}
-                          に関する様々な問題に挑戦しよう。あなたの知恵をテストします！
-                        </p>
-                        <div className="quiz-footer flex justify-between items-center">
-                          <div className="difficulty-meter flex items-center">
-                            <span className="bg-green-500 inline-block w-2 h-2 rounded-full mr-1"></span>
-                            <span className="bg-green-500 inline-block w-2 h-2 rounded-full mr-1"></span>
-                            <span className="bg-green-500 inline-block w-2 h-2 rounded-full mr-1"></span>
-                            <span className="bg-gray-500 inline-block w-2 h-2 rounded-full mr-1"></span>
-                            <span className="bg-gray-500 inline-block w-2 h-2 rounded-full"></span>
-                          </div>
-                          <button
-                            className="bg-gradient-to-r from-pink-500 to-purple-600 text-white py-2 px-5 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
-                            onClick={() => handleStageSelect(stageNumber)}
-                          >
-                            プレイする
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <QuizListScreen
+            quizData={quizData}
+            loading={loading}
+            completedStages={completedStages}
+            handleStageSelect={handleStageSelect}
+            stageNames={stageNames}
+          />
         )}
-
-        {/* ゲーム画面 */}
-        {screen === "game" && currentStage && currentQuestion && (
-          <div className="flex-grow-3 flex justify-between flex-col game-screen bg-gray-800/70 rounded-2xl p-4 max-w-4xl mx-auto shadow-2xl">
-            <div className="game-header flex flex-wrap justify-between items-center mb-4 pb-4 border-b border-gray-700">
-              <h2 className="game-title text-2xl font-bold grow-10">
-                {stageNames[currentStage - 1]}
-              </h2>
-              <div className="game-info flex items-center justify-between grow-1 space-x-4">
-                <div className="timer flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 mr-2 text-yellow-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <span className="time-left text-sm">
-                    {formatTime(elapsedTime)}
-                  </span>
-                </div>
-                <div className="question-progress text-sm text-gray-400">
-                  {currentQuestionIndex + 1}/{questions.length}
-                </div>
-                {currentQuestion.hint && (
-                  <button
-                    type="button"
-                    onClick={handleHintToggle}
-                    className="bg-amber-600/80 text-white py-1 px-3 rounded-lg text-sm transition hover:bg-amber-700 active:scale-95 flex items-center"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 mr-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    ヒント
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="question-container grow-3 flex flex-col justify-between">
-              <div className="question-number text-gray-400 mb-2">
-                質問 {currentQuestionIndex + 1}
-              </div>
-              <div className="question-text text-xl whitespace-pre-line">
-                {currentQuestion.question}
-              </div>
-
-              {currentQuestion.imageUrl && (
-                <div className="image-container flex justify-center">
-                  <img
-                    src={currentQuestion.imageUrl}
-                    alt="問題の画像"
-                    className="max-h-64 rounded-lg"
-                  />
-                </div>
-              )}
-
-              <div className="feedback text-center h-8 font-bold grow-4 flex items-center justify-center">
-                {feedback.message && (
-                  <div
-                    className={`text-lg font-semibold ${
-                      feedback.type === "correct"
-                        ? "text-green-500"
-                        : "text-red-500"
-                    }`}
-                  >
-                    {feedback.message}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="answer-container">
-              {!isAnswered ? (
-                <form onSubmit={handleAnswerSubmit} className="mt-4">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      className="w-full px-5 py-4 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
-                      placeholder="答えを入力してください"
-                      autoComplete="off"
-                      value={userAnswer}
-                      onChange={(e) => setUserAnswer(e.target.value)}
-                    />
-                    <button
-                      type="submit"
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-2.5 rounded-lg transition-all duration-300 hover:from-blue-700 hover:to-indigo-700 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
-                      disabled={userAnswer.trim() === ""}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 5l7 7-7 7M5 5l7 7-7 7"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <div className="">
-                  {currentQuestion.explanation && (
-                    <div className="explanation bg-indigo-900/30 border-l-4 border-indigo-500 pl-4 pr-2 py-4 rounded-lg">
-                      <h4 className="font-bold text-indigo-300 text-xl mb-2">
-                        解説:
-                      </h4>
-                      <pre className="text-gray-300 whitespace-pre-line text-xs">
-                        {currentQuestion.explanation}
-                      </pre>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="action-buttons flex justify-end mt-4">
-                {isAnswered && (
-                  <button
-                    onClick={handleNextQuestion}
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2 px-6 rounded-lg transition-all duration-200 hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 active:scale-95"
-                  >
-                    {currentQuestionIndex < questions.length - 1
-                      ? "次の問題"
-                      : "結果を見る"}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+        {screen === "game" && (
+          <GameScreen
+            currentStage={currentStage}
+            currentQuestionIndex={currentQuestionIndex}
+            questions={questions}
+            elapsedTime={elapsedTime}
+            formatTime={formatTime}
+            handleHintToggle={handleHintToggle}
+            currentQuestion={currentQuestion}
+            isAnswered={isAnswered}
+            feedback={feedback}
+            handleNextQuestion={handleNextQuestion}
+            handleAnswerSubmit={handleAnswerSubmit}
+            userAnswer={userAnswer}
+            setUserAnswer={setUserAnswer}
+            stageNames={stageNames}
+            setScreen={setScreen}
+            sounds={{ success: sounds.success }}
+            setEndTime={setEndTime}
+            setTimerActive={setTimerActive}
+            completedStages={completedStages}
+            setCompletedStages={setCompletedStages}
+            saveCompletedStages={saveCompletedStages}
+          />
         )}
-
-        {/* 結果画面 */}
         {screen === "results" && (
-          <div className="results-screen bg-gray-800/70 rounded-2xl p-8 max-w-4xl mx-auto shadow-2xl">
-            <h2 className="results-title text-3xl font-bold text-center mb-8">
-              謎解き結果
-            </h2>
-
-            <div className="score-circle w-28 h-28 rounded-full border-8 border-indigo-600 mx-auto mb-8 flex items-center justify-center">
-              <div className="score-inner text-center">
-                <div className="score-value text-2xl font-bold text-indigo-400 mb-2">
-                  {scorePercentage}%
-                </div>
-                <div className="score-label text-sm text-gray-400">スコア</div>
-              </div>
-            </div>
-
-            <div className="score-details flex justify-around mb-10 text-center">
-              <div className="detail-item">
-                <div className="detail-value text-2xl font-bold text-green-500 mb-1">
-                  {correctAnswersCount}
-                </div>
-                <div className="detail-label text-sm text-gray-400">正解</div>
-              </div>
-              <div className="detail-item">
-                <div className="detail-value text-2xl font-bold text-red-500 mb-1">
-                  {questions.length - correctAnswersCount}
-                </div>
-                <div className="detail-label text-sm text-gray-400">不正解</div>
-              </div>
-              <div className="detail-item">
-                <div className="detail-value text-2xl font-bold text-yellow-500 mb-1">
-                  {formatTime(totalTime)}
-                </div>
-                <div className="detail-label text-sm text-gray-400">
-                  所要時間
-                </div>
-              </div>
-            </div>
-
-            <div className="result-message text-center text-xl mb-10 text-gray-200">
-              {scorePercentage >= 80
-                ? "すばらしい！あなたは本当のリドルマスターです！"
-                : scorePercentage >= 60
-                ? "よくできました！もう少しで完璧です！"
-                : scorePercentage >= 40
-                ? "悪くない結果です。もっと頑張りましょう！"
-                : "まだまだ勉強が必要ですね。もう一度挑戦しましょう！"}
-            </div>
-
-            <div className="action-buttons flex justify-center space-x-4">
-              <button
-                onClick={handleRetry}
-                className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-8 rounded-lg transition-all duration-200 hover:shadow-lg hover:from-purple-700 hover:to-indigo-700 active:scale-95"
-              >
-                もう一度挑戦
-              </button>
-              <button
-                onClick={handleReturnToSelection}
-                className="bg-gradient-to-r from-gray-700 to-gray-600 text-white py-3 px-8 rounded-lg transition-all duration-200 hover:shadow-lg hover:from-gray-800 hover:to-gray-700 active:scale-95"
-              >
-                ホームに戻る
-              </button>
-            </div>
-            <Confetti
-              style={{
-                position: "fixed",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                zIndex: 9999,
-              }}
-              run={true}
-              width={width}
-              height={height}
-              numberOfPieces={500}
-              recycle={false}
-              gravity={0.3}
-            />
-          </div>
+          <ResultsScreen
+            isAnswered={isAnswered}
+            feedbackType={feedback.type}
+            // width={width} // 削除
+            // height={height} // 削除
+            correctAnswersCount={correctAnswersCount}
+            totalTime={totalTime}
+            formatTime={formatTime}
+            scorePercentage={scorePercentage}
+            answers={answers}
+            handleRetry={handleRetry}
+            handleReturnToSelection={handleReturnToSelection}
+          />
         )}
       </main>
 
-      {/* <footer className="bg-gray-800 py-8 mt-8 text-center">
-        <p className="text-gray-500 text-sm"> 2025 RIDDLE MASTER All Rights Reserved.</p>
-      </footer> */}
-
-      {/* ヒントモーダル */}
-      {showModal && currentQuestion && currentQuestion.hint && (
-        <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 overscroll-none overflow-hidden"
-          onClick={handleHintToggle}
-        >
-          <div
-            className="bg-white/80 backdrop-blur-md rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl border border-white/50 transform transition-all duration-300 animate-fadeIn"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-800">ヒント</h3>
-              <button
-                onClick={handleHintToggle}
-                className="text-gray-500 hover:text-gray-800 transition-colors"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-            <pre className="hint-content bg-amber-50/90 backdrop-blur-sm border-l-4 border-amber-400 text-amber-800 p-4 rounded-lg text-base">
-              {currentQuestion.hint}
-            </pre>
-            <div className="mt-6 text-center">
-              <button
-                onClick={handleHintToggle}
-                className="bg-indigo-600/90 backdrop-blur-sm text-white py-2 px-6 rounded-lg transition-all duration-200 hover:bg-indigo-700 active:scale-95"
-              >
-                閉じる
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* 新しいヒントモーダル */}
+      {showModal && (
+        <HintModal
+          hint={currentQuestion?.hint}
+          onClose={() => setShowModal(false)} // モーダルを閉じる処理
+        />
       )}
 
-      {/* 装飾用の光の効果 */}
-      <div className="fixed top-0 left-0 w-96 h-96 rounded-full bg-purple-800/20 blur-3xl -z-10 animate-blob"></div>
-      <div className="fixed bottom-0 right-0 w-96 h-96 rounded-full bg-blue-800/20 blur-3xl -z-10 animate-blob animation-delay-2000"></div>
+      {/* デコレーション */}
+      <div className="fixed top-0 right-0 -z-10 w-[40%] h-screen bg-gradient-to-b from-purple-900/20 via-blue-900/20 to-transparent blur-3xl"></div>
+      <div className="fixed bottom-0 left-0 -z-10 w-[40%] h-screen bg-gradient-to-t from-blue-900/20 via-indigo-900/20 to-transparent blur-3xl"></div>
     </div>
   );
 }

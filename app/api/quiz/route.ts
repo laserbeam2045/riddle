@@ -32,7 +32,7 @@ const quizData: QuizData = {
       question: "パンはパンでも、\n「day + book」はな～んだ？",
       answers: ["ジャパン", "JAPAN"],
       hint: "英語 → 日本語 → 英語",
-      explanation: "英語の「day」と「book」を日本語にして、\n「日」と「本」を組み合わせたら「日本」になり、\nそれを英語に戻すと「ジャパン」になります。",
+      explanation: "英語の「day」と「book」を日本語にして、\n「日」と「本」を組み合わせると「日本」になり、\nそれを英語に戻すと「ジャパン」になります。",
     },
     {
       question: "パンはパンでも、\n「P & A」はな～んだ？",
