@@ -95,23 +95,23 @@ export default function Home() {
 
   const sounds = {
     phone: useSound("/sounds/phone.mp3", {
-      volume: 0.05,
+      volume: 0.02,
       playbackRate: 0.75,
     })[0],
     success: useSound("/sounds/success.mp3", {
-      volume: 0.05,
+      volume: 0.02,
       playbackRate: 0.75,
     })[0],
     correct: useSound("/sounds/correct.mp3", {
-      volume: 0.05,
+      volume: 0.02,
       playbackRate: 0.75,
     })[0],
     incorrect: useSound("/sounds/incorrect.mp3", {
-      volume: 0.05,
+      volume: 0.02,
       playbackRate: 0.75,
     })[0],
     cursor: useSound("/sounds/sound01.mp3", {
-      volume: 0.05,
+      volume: 0.02,
       playbackRate: 0.75,
     })[0],
   };
@@ -231,7 +231,7 @@ export default function Home() {
     setShowHint(false);
     setShowResults(false);
     setAnswers([]);
-    setScreen("home");
+    setScreen("quiz-list");
     setTimerActive(false);
   };
 
