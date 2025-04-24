@@ -2,6 +2,12 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+// Import Font Awesome CSS
+import "@fortawesome/fontawesome-svg-core/styles.css";
+import { config } from "@fortawesome/fontawesome-svg-core";
+// Prevent Font Awesome from adding its CSS automatically since we did it manually above
+// config.autoAddCss = false; // Moved inside RootLayout
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -22,10 +28,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Configure Font Awesome to prevent automatic CSS injection before children render
+  config.autoAddCss = false;
   return (
     <html lang="en">
       <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

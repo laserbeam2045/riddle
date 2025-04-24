@@ -10,6 +10,7 @@ import QuizListScreen from "../components/QuizListScreen";
 import GameScreen from "../components/GameScreen";
 import ResultsScreen from "../components/ResultsScreen";
 import HintModal from "../components/HintModal";
+import PuzzleGameScreen from "../components/PuzzleGameScreen"; // パズルゲームコンポーネントをインポート
 
 // 謎解きのデータ型定義 (エクスポート)
 export interface Question {
@@ -82,9 +83,9 @@ export default function Home() {
   const [attemptCount, setAttemptCount] = useState(0); // 回答試行回数
   const [completedStages, setCompletedStages] = useState<number[]>([]); // クリア済みステージ
 
-  // 画面表示状態
+  // 画面表示状態 (puzzleを追加)
   const [screen, setScreen] = useState<
-    "home" | "quiz-list" | "game" | "results"
+    "home" | "quiz-list" | "game" | "results" | "puzzle"
   >("home");
 
   const { quizData, loading, error } = useQuizData();
@@ -370,7 +371,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-dvh flex flex-col bg-gray-900 text-white">
+    <div className="h-dvh w-dvw flex flex-col text-white">
       {/* ヘッダー */}
       <header className="bg-gradient-to-r from-purple-800 to-blue-800 py-6 px-4 shadow-lg sticky top-0 z-10">
         <div className="container mx-auto flex justify-between items-center">
@@ -380,18 +381,7 @@ export default function Home() {
           >
             RIDDLE MASTER
           </div>
-          <nav className="md:flex space-x-8">
-            {/* <a 
-              href="#" 
-              className="text-white hover:text-white/90 transition-colors relative after:content-[''] after:absolute after:w-0 after:h-0.5 after:bg-white after:bottom-[-5px] after:left-0 after:transition-all hover:after:w-full"
-              onClick={(e) => {
-                e.preventDefault();
-                handleReturnToSelection();
-              }}
-            >
-              ホーム
-            </a> */}
-          </nav>
+          <nav className="md:flex space-x-8"></nav>
         </div>
       </header>
 
@@ -405,6 +395,11 @@ export default function Home() {
             onStartQuiz={() => {
               sounds.phone();
               setScreen("quiz-list");
+            }}
+            onStartPuzzle={() => {
+              // パズルゲーム開始ハンドラを追加
+              // sounds.phone(); // 必要に応じて効果音
+              setScreen("puzzle");
             }}
           />
         )}
@@ -456,6 +451,9 @@ export default function Home() {
             handleRetry={handleRetry}
             handleReturnToSelection={handleReturnToSelection}
           />
+        )}
+        {screen === "puzzle" && ( // パズルゲーム画面のレンダリング条件を追加
+          <PuzzleGameScreen onReturnHome={handleReturnHome} /> // ホームに戻る関数を渡す
         )}
       </main>
 
