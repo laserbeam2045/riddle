@@ -49,6 +49,7 @@ button {
   backdrop-filter: blur(2px);
   background-color: rgba(0,61,125, 0.33);
   transition: all 0.33s ease-out;
+  z-index: 2000;
 }
 
 .hint-modal {

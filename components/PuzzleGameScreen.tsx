@@ -4,9 +4,10 @@ import React, {
   useRef,
   useCallback,
   useMemo,
-} from "react"; // useMemo を追加
+} from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStar } from "@fortawesome/free-solid-svg-icons"; // Font Awesomeのスターアイコンをインポート
+import { faStar } from "@fortawesome/free-solid-svg-icons";
+import ConfirmationModal from "./ConfirmationModal"; // ConfirmationModal をインポート
 
 // --- 型定義 ---
 // windowオブジェクトの型拡張 (webkitAudioContext用)
@@ -81,11 +82,15 @@ const PuzzleGameScreen: React.FC<PuzzleGameScreenProps> = () => {
   const [currentStars, setCurrentStars] = useState(0);
   const [progress, setProgress] = useState<ProgressData>({});
   const [informationText, setInformationText] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false); // ステージ選択モーダル用
   const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
   const [nowPlayingText, setNowPlayingText] = useState("");
   const [pairs, setPairs] = useState<StagePair[]>([]); // Added state for pairs
   const [flyingStars, setFlyingStars] = useState<FlyingStarData[]>([]); // 星アニメーション用State
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false); // 確認モーダル用
+  const [confirmStep, setConfirmStep] = useState(0); // 確認ステップ (0: 初期, 1: 1段階目, 2: 2段階目, 3: 3段階目)
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null); // 確認後に実行するアクション
+  const [confirmMessage, setConfirmMessage] = useState(""); // 確認メッセージ
 
   // --- Refs ---
   const gameContainerRef = useRef<HTMLDivElement>(null);
@@ -1227,28 +1232,62 @@ const PuzzleGameScreen: React.FC<PuzzleGameScreenProps> = () => {
 
     const hintCost = stage.number;
     if (currentStarsRef.current >= hintCost) {
-      // Use ref
-      if (window.confirm(`${hintCost}スターでヒントを購入しますか？`)) {
-        if (window.confirm("本当にいいんですか？")) {
-          if (window.confirm("もったいないですよ？")) {
-            displayHint(1200);
-            discountStars(hintCost);
-            setBuyHistory(stageId);
-            setTimeout(() => {
-              setInformation("いいお買い物をしましたね");
-            }, 500);
-          } else {
-            setInformation("賢明！");
-          }
-        } else {
-          setInformation("我慢！");
-        }
-      } else {
-        setInformation("節約！");
-      }
+      // --- Confirmation Modal Logic ---
+      // 最終確認後に実行するアクションを定義
+      const actionToConfirm = () => {
+        displayHint(1200); // 遅延表示
+        discountStars(hintCost);
+        setBuyHistory(stageId);
+        // メッセージ表示は handleConfirm 内で行う
+      };
+
+      // モーダルを開くための state を設定
+      setConfirmMessage(`${hintCost}スターでヒントを購入しますか？`);
+      setConfirmAction(() => actionToConfirm); // 関数を state に設定
+      setConfirmStep(0); // ステップをリセット
+      setIsConfirmModalOpen(true); // モーダルを開く
+      playAudio("modal"); // モーダル表示音
     } else {
       setInformation("ヒントを買うにはスターが足りません", true);
     }
+  };
+
+  // --- Confirmation Modal Handlers ---
+  const handleConfirm = () => {
+    playAudio("decision"); // 確認音
+    const nextStep = confirmStep + 1;
+    // const stage = currentStageRef.current;
+    // const hintCost = stage?.number ?? 0; // Nullish coalescing for safety
+
+    if (nextStep === 1) {
+      setConfirmMessage("本当にいいんですか？");
+      setConfirmStep(nextStep);
+    } else if (nextStep === 2) {
+      setConfirmMessage("もったいないですよ？");
+      setConfirmStep(nextStep);
+    } else if (nextStep === 3 && confirmAction) {
+      confirmAction(); // 最終確認後にアクション実行
+      setIsConfirmModalOpen(false);
+      setConfirmStep(0);
+      setConfirmAction(null);
+      setTimeout(() => {
+        setInformation("いいお買い物をしましたね");
+      }, 500); // 元のコードのメッセージ表示タイミングに合わせる
+    }
+  };
+
+  const handleCloseConfirm = () => {
+    playAudio("cancel"); // キャンセル音
+    if (confirmStep === 0) {
+      setInformation("節約！");
+    } else if (confirmStep === 1) {
+      setInformation("我慢！");
+    } else if (confirmStep === 2) {
+      setInformation("賢明！");
+    }
+    setIsConfirmModalOpen(false);
+    setConfirmStep(0);
+    setConfirmAction(null);
   };
 
   // --- useEffect Hooks ---
@@ -1509,6 +1548,14 @@ const PuzzleGameScreen: React.FC<PuzzleGameScreenProps> = () => {
           <p>Touch to start.</p>
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isConfirmModalOpen}
+        message={confirmMessage}
+        onConfirm={handleConfirm}
+        onClose={handleCloseConfirm}
+      />
     </div>
   );
 };
