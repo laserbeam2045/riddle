@@ -1,17 +1,15 @@
-"use client";
-
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 "use client";
 
-import { useState, useEffect, useRef } from "react"; // useRef を追加
+import { useState, useEffect, useRef } from "react";
 import useSound from "use-sound";
 import { useWindowSize } from "react-use";
-import HomeScreen from "../components/HomeScreen"; // 追加
-import QuizListScreen from "../components/QuizListScreen"; // 追加
-import GameScreen from "../components/GameScreen"; // 追加
-import ResultsScreen from "../components/ResultsScreen"; // 追加
-import HintModal from "../components/HintModal"; // HintModal をインポート
+import HomeScreen from "../components/HomeScreen";
+import QuizListScreen from "../components/QuizListScreen";
+import GameScreen from "../components/GameScreen";
+import ResultsScreen from "../components/ResultsScreen";
+import HintModal from "../components/HintModal";
 
 // 謎解きのデータ型定義 (エクスポート)
 export interface Question {
@@ -95,23 +93,23 @@ export default function Home() {
 
   const sounds = {
     phone: useSound("/sounds/phone.mp3", {
-      volume: 0.02,
+      volume: 0.4,
       playbackRate: 0.75,
     })[0],
     success: useSound("/sounds/success.mp3", {
-      volume: 0.02,
+      volume: 0.4,
       playbackRate: 0.75,
     })[0],
     correct: useSound("/sounds/correct.mp3", {
-      volume: 0.02,
+      volume: 0.4,
       playbackRate: 0.75,
     })[0],
     incorrect: useSound("/sounds/incorrect.mp3", {
-      volume: 0.02,
+      volume: 0.4,
       playbackRate: 0.75,
     })[0],
     cursor: useSound("/sounds/sound01.mp3", {
-      volume: 0.02,
+      volume: 0.4,
       playbackRate: 0.75,
     })[0],
   };
@@ -219,6 +217,11 @@ export default function Home() {
       setShowHint(false);
       setAttemptCount(0);
     }
+  };
+
+  const handleReturnHome = () => {
+    sounds.phone();
+    setScreen("home");
   };
 
   const handleReturnToSelection = () => {
@@ -373,7 +376,7 @@ export default function Home() {
         <div className="container mx-auto flex justify-between items-center">
           <div
             className="text-2xl font-bold tracking-wider cursor-pointer"
-            onClick={handleReturnToSelection}
+            onClick={handleReturnHome}
           >
             RIDDLE MASTER
           </div>

@@ -117,7 +117,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
               {currentQuestion.explanation && (
                 <div className="explanation mt-6 p-4 bg-gray-700/50 rounded-lg">
                   <h4 className="font-bold text-green-400 mb-2">解説:</h4>
-                  <pre className="whitespace-pre-wrap text-gray-200">
+                  <pre className="whitespace-pre-wrap text-gray-200 text-xs">
                     {currentQuestion.explanation}
                   </pre>
                 </div>

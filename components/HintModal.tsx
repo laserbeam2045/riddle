@@ -13,10 +13,10 @@ const HintModal: React.FC<HintModalProps> = ({ hint, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-lg flex items-center justify-center z-50 p-4">
+    <div className="modal-window flex items-center justify-center z-50 p-4">
       {" "}
       {/* backdrop-blur-lg と bg-black/80 に変更 */}
-      <div className="hint-modal bg-gray-800/80 backdrop-blur-md border border-gray-600 p-8 rounded-xl shadow-2xl max-w-md w-full">
+      <div className="hint-modal p-8 bg-gray-800/80 backdrop-blur-md rounded-xl shadow-2xl max-w-md w-full">
         {" "}
         {/* backdrop-blur-md と bg-gray-800/80 に変更 */}
         {showConfirmation ? (
@@ -46,7 +46,7 @@ const HintModal: React.FC<HintModalProps> = ({ hint, onClose }) => {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-2xl font-bold text-yellow-400">ヒント</h3>
               <button
-                className="text-gray-400 hover:text-white"
+                className="absolute top-0 right-0 text-gray-400 hover:text-white"
                 onClick={onClose}
               >
                 <svg
