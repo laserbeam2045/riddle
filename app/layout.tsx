@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import AppHeader from "@/components/AppHeader"; // Import the common header again
 import "./globals.css";
 
 // Import Font Awesome CSS
@@ -38,6 +39,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <AppHeader /> {/* Place the common header here */}
         {children}
       </body>
     </html>

@@ -372,19 +372,6 @@ export default function Home() {
 
   return (
     <div className="h-dvh w-dvw flex flex-col text-white">
-      {/* ヘッダー */}
-      <header className="bg-gradient-to-r from-purple-800 to-blue-800 py-6 px-4 shadow-lg sticky top-0 z-10">
-        <div className="container mx-auto flex justify-between items-center">
-          <div
-            className="text-2xl font-bold tracking-wider cursor-pointer"
-            onClick={handleReturnHome}
-          >
-            RIDDLE MASTER
-          </div>
-          <nav className="md:flex space-x-8"></nav>
-        </div>
-      </header>
-
       <main
         ref={mainContentRef}
         className="flex flex-grow container mx-auto px-4 py-8"

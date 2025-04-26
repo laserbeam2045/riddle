@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link"; // Import Link component
 
 interface HomeScreenProps {
   onStartQuiz: () => void;
@@ -19,7 +20,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         様々なカテゴリーの問題に挑戦して、リドルマスターの称号を手に入れよう！
         パズルゲームも追加されたぞ！
       </p>
-      <div className="flex space-x-4">
+      <div className="flex gap-4 flex-wrap justify-around">
         {" "}
         {/* ボタンを横並びにする */}
         <button
@@ -34,6 +35,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         >
           パズルをプレイ
         </button>
+        {/* Add Link to Cat Game */}
+        <Link href="/catgame" passHref>
+          <button className="bg-gradient-to-r from-green-400 to-teal-500 text-white py-3 px-8 rounded-full font-bold uppercase tracking-wider shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
+            猫と鼠をプレイ
+          </button>
+        </Link>
       </div>
     </div>
   );
