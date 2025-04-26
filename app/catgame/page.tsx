@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react"; // Import useRef
-import useSound from "use-sound"; // Import useSound
+import { useState, useEffect, useCallback, useRef } from "react";
+import useSound from "use-sound";
 import CatGame from "@/components/catgame/Game";
 import { StageData } from "@/components/catgame/types";
 
@@ -20,7 +20,7 @@ export default function CatGamePage() {
   const [clearedStages, setClearedStages] = useState<Set<number>>(new Set());
 
   // Sound hook for cat sound
-  const [playCatSound] = useSound("/sounds/cat.mp3", { volume: 0.5 }); // Add cat sound hook
+  const [playCat] = useSound("/sounds/cat.mp3", { volume: 0.5 });
 
   // State for answer playback (moved from Game.tsx)
   const [isPlayingBack, setIsPlayingBack] = useState(false);
@@ -143,11 +143,11 @@ export default function CatGamePage() {
         return newCleared;
       });
       // Play the cat sound on stage clear
-      if (playCatSound) {
-        playCatSound();
+      if (playCat) {
+        playCat();
       }
     },
-    [playCatSound]
+    [playCat]
   ); // Add playCatSound dependency
 
   const handleOpenModal = () => {

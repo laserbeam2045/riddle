@@ -10,6 +10,7 @@ import React, {
 import Confetti from "react-confetti";
 import GraphDisplay from "./GraphDisplay";
 import GameInfo from "./GameInfo";
+import useSound from "use-sound";
 import { GameState, StageData, NodeData, LinkData } from "./types";
 
 type AdjacencyList = { [key: string]: string[] };
@@ -88,6 +89,8 @@ const CatGame: React.FC<CatGameProps> = ({
   const memoRef = useRef<Memo>({});
   const [clearStatus, setClearStatus] = useState<ClearStatus | null>(null);
   // Removed playback state (isPlayingBack, playbackStep, playbackIntervalRef)
+
+  const [playMove] = useSound("/sounds/move.mp3", { volume: 0.5 });
 
   // --- Effects ---
 
@@ -392,6 +395,8 @@ const CatGame: React.FC<CatGameProps> = ({
               currentPlayer: null,
               message: resultMessage,
             };
+          } else {
+            playMove();
           }
           // 鼠のターンへ移行
           setTimeout(moveMouse, 700); // 鼠の思考時間を考慮して遅延実行
@@ -419,6 +424,7 @@ const CatGame: React.FC<CatGameProps> = ({
       });
     },
     [
+      playMove,
       moveMouse,
       graphDisplayData.adj,
       saveClearHistory,
