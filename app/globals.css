@@ -91,7 +91,7 @@ body { /* Note: Potential conflict with existing body styles */
 #information {
   width: 100%;
   height: 60px;
-  padding: 10px 0;
+  padding: 20px 0;
   display: flex;
   align-items: center;
 }
@@ -99,17 +99,16 @@ body { /* Note: Potential conflict with existing body styles */
 #information p {
   width: 100%;
   margin: 0px 20px;
-  padding: 12px;
   box-sizing: border-box;
   text-align: center;
   color: #999;
 }
-
+/* 
 #stage-container {
   display: flex;
-  flex-wrap: wrap;           /* はみ出す場合は折り返す */
-  justify-content: center;   /* 中央寄せ */
-  gap: 20px;                 /* ボタン同士の余白 */
+  flex-wrap: wrap;           
+  justify-content: center;  
+  gap: 20px;              
   width: 100%;
   height: 100%;
   box-sizing: border-box;
@@ -127,12 +126,16 @@ body { /* Note: Potential conflict with existing body styles */
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  white-space: nowrap; /* テキストを改行させない */
+  white-space: nowrap;
 }
 
 #stage-container button:active {
   background: #1976d2;
-}
+} */
+
+
+
+
 
 #now-playing {
   font-size: 18px;
@@ -184,7 +187,7 @@ color: #007AFF; /* ホバー時の色変更 */
 
 #modal-content {
 position: relative;
-height: calc(100% - 80px); /* 閉じるボタンの領域を除外 */
+height: calc(100% - 80px);
 padding: 40px 20px;
 }
 
@@ -457,124 +460,490 @@ position: relative;
 -webkit-font-smoothing: antialiased;
 }
 
-/* Icon separator */
-.btn-sep {
-padding: 25px 40px 25px 120px;
-}
 
-.btn-sep:before {
-background: rgba(0,0,0,0.15);
-}
 
-/* Button 2 */
-.btn-2 {
-background: #2ecc71;
-color: #fff;
-}
-
-.btn-2:hover {
-background: #27ae60;
-}
-
-.btn-2:active {
-background: #27ae60;
-top: 2px;
-}
-
-.btn-2:before {
-position: absolute;
-height: 100%;
-left: 0;
-top: 0;
-line-height: 3;
-font-size: 140%;
-width: 60px;
-}
-
-.icon-cart:before {
-content: "\f07a"; /* Requires Font Awesome setup */
-}
-
-/* Puzzle Game Screen Header & Hint Button Styles */
+/* パズルヘッダー全体のスタイル */
 .puzzle-header {
-  display: flex;
-  justify-content: space-between; /* アイテムを均等に配置 */
-  align-items: center;
   width: 100%;
-  max-width: 600px; /* ゲームコンテナの最大幅に合わせるなど調整 */
-  padding: 10px 15px;
-  background-color: rgba(255, 255, 255, 0.7); /* 少し透明な白背景 */
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  margin-bottom: 15px; /* ヘッダーとヒントボタンの間のスペース */
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  max-width: 600px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 240, 255, 0.85) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 20, 80, 0.12), 
+              0 2px 6px rgba(0, 0, 0, 0.08),
+              inset 0 1px 1px rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.puzzle-header-item {
+/* ヘッダー上部 */
+.puzzle-header-top {
   display: flex;
   align-items: center;
-  color: #333; /* 暗めの文字色 */
+  justify-content: space-between;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid rgba(210, 220, 250, 0.5);
+}
+
+/* ステージ表示部分 */
+.stage-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stage-icon {
+  width: 24px;
+  height: 24px;
+  color: #4361ee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stage-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #324ab2;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.stage-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: #5c5f7a;
+  padding: 4px 12px;
+  background-color: rgba(200, 210, 255, 0.25);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 3px rgba(0, 10, 50, 0.1);
+}
+
+/* ヘッダー下部 */
+.puzzle-header-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+}
+
+/* スター表示 */
+.stars-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: linear-gradient(to bottom, rgba(255, 210, 0, 0.15), rgba(255, 200, 0, 0.05));
+  border-radius: 12px;
+  box-shadow: inset 0 1px 2px rgba(255, 200, 0, 0.2);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.stars-container:hover {
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 3px rgba(255, 200, 0, 0.3), 0 2px 5px rgba(255, 200, 0, 0.15);
+}
+
+.stars-icon {
+  color: #FFD700;
+  width: 20px;
+  height: 20px;
+  font-size: 20px; /* 少し大きめに */
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.5));
+}
+
+.stars-count {
+  font-weight: 700;
   font-size: 16px;
+  color: #705000;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.7);
 }
 
 .puzzle-header-stars {
   font-weight: bold;
 }
 
-.puzzle-header-stars .star-icon {
-  color: #FFD700; /* ゴールド */
-  font-size: 20px; /* 少し大きめに */
-  margin-right: 5px;
-  vertical-align: middle; /* アイコンと数字の縦位置を揃える */
-}
-.puzzle-header-stars .star-count {
-  vertical-align: middle;
+/* ボタンコンテナ */
+.buttons-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-
-.puzzle-header-stage-name {
-  flex-grow: 1; /* 中央の要素がスペースを埋める */
-  text-align: center;
-  font-weight: 500;
-  color: #555;
-}
-
-.puzzle-header-button,
-.puzzle-hint-button {
-  padding: 6px 12px; /* 少し小さく */
+/* 共通ボタンスタイル */
+.puzzle-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
   border: none;
-  border-radius: 12px; /* 角を丸く */
-  background-image: linear-gradient(to bottom, #007AFF, #005bb5); /* グラデーション背景 */
-  color: white;
-  font-size: 13px; /* 少し小さく */
-  font-weight: 600; /* 少し太く */
+  border-radius: 12px;
   cursor: pointer;
-  transition: background-image 0.3s ease, transform 0.1s ease, box-shadow 0.2s ease;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15); /* 少し影を付ける */
-  margin-left: 8px; /* ボタン間のスペース */
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.3px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1),
+              inset 0 1px 1px rgba(255, 255, 255, 0.4);
 }
-/* ヘッダー内の最初のボタンには左マージン不要 */
-.puzzle-header-item:first-child + .puzzle-header-item + .puzzle-header-item {
-    margin-left: 8px;
+
+/* ボタン内アイコン */
+.button-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ヒントボタン */
+.hint-button {
+  background: linear-gradient(to bottom, #ff9500, #ff7800);
+  color: white;
+  border: 1px solid rgba(255, 120, 0, 0.6);
+}
+
+.hint-button:hover {
+  background: linear-gradient(to bottom, #ffaa00, #ff8800);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 120, 0, 0.2),
+              inset 0 1px 1px rgba(255, 255, 255, 0.4);
+}
+
+.hint-button:active {
+  background: linear-gradient(to bottom, #ff7800, #ff6500);
+  transform: translateY(1px);
+  box-shadow: 0 1px 3px rgba(255, 120, 0, 0.2),
+              inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ステージ選択ボタン */
+.select-button {
+  background: linear-gradient(to bottom, #4361ee, #3a56d4);
+  color: white;
+  border: 1px solid rgba(50, 80, 200, 0.6);
+}
+
+.select-button:hover {
+  background: linear-gradient(to bottom, #4f6ef2, #4361ee);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(67, 97, 238, 0.25),
+              inset 0 1px 1px rgba(255, 255, 255, 0.4);
+}
+
+.select-button:active {
+  background: linear-gradient(to bottom, #3a56d4, #304ac0);
+  transform: translateY(1px);
+  box-shadow: 0 1px 3px rgba(67, 97, 238, 0.15),
+              inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 
-.puzzle-header-button:hover,
-.puzzle-hint-button:hover {
-  background-image: linear-gradient(to bottom, #0088ff, #0066cc); /* ホバー時のグラデーション */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* ホバー時の影 */
+
+
+
+
+
+
+
+
+
+
+
+#modal-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  background: linear-gradient(135deg, #f5f7ff 0%, #e8ecff 100%);
+  border-radius: 16px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
-.puzzle-header-button:active,
-.puzzle-hint-button:active {
-  transform: scale(0.97); /* クリック時に少し縮む */
-  background-image: linear-gradient(to bottom, #005bb5, #004c9a); /* アクティブ時のグラデーション */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* アクティブ時の影 */
+/* タイトル */
+.stage-select-title {
+  text-align: center;
+  margin: 0 0 20px;
+  color: #2a325a;
+  font-size: 24px;
+  font-weight: 700;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.9);
+  position: relative;
 }
 
-/* .puzzle-hint-button specific styles if needed, otherwise remove margin-bottom */
-/* .puzzle-hint-button { */
-  /* margin-bottom: 15px; /* ヘッダーに移動したので不要 */
-/* } */
+.stage-select-title:after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(to right, #4361ee, #7589ff);
+  margin: 10px auto 0;
+  border-radius: 2px;
+}
+
+/* ステージグリッドコンテナ */
+.stage-grid-container {
+  /* display: grid; */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  overflow-y: auto;
+  padding: 8px 4px;
+  margin-bottom: 20px;
+  flex: 1;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
+}
+
+/* ステージカード */
+.stage-card {
+  position: relative;
+  margin: 16px 0;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 10, 60, 0.08);
+  border: 1px solid rgba(230, 240, 255, 0.8);
+  background: #f8faff;
+  overflow: hidden;
+}
+
+/* ステージボタン */
+.stage-button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  outline: none;
+  height: 86px; /* 固定高さ */
+}
+
+.stage-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/* ステージ番号 */
+.stage-number {
+  width: 60px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(135deg, 
+    hsl(var(--stage-hue), 70%, 60%) 0%, 
+    hsl(var(--stage-hue), 80%, 45%) 100%);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.stage-number:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.2) 0%, 
+    rgba(255, 255, 255, 0) 50%, 
+    rgba(0, 0, 0, 0.1) 100%);
+}
+
+/* ステージ詳細 */
+.stage-details {
+  flex: 1;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.stage-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2a325a;
+  margin-bottom: 6px;
+}
+
+.stage-status {
+  font-size: 13px;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+}
+
+/* プレイ中のステージ */
+.current-stage {
+  box-shadow: 0 0 0 2px hsl(var(--stage-hue), 70%, 60%), 
+              0 8px 16px rgba(0, 10, 60, 0.15);
+  transform: translateY(-2px);
+  z-index: 1;
+}
+
+.playing-indicator {
+  display: flex;
+  align-items: center;
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.playing-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #3b82f6;
+  margin-right: 6px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; transform: scale(0.8); }
+  50% { opacity: 0.6; transform: scale(1.2); }
+  100% { opacity: 1; transform: scale(0.8); }
+}
+
+/* クリア済みステージ */
+.cleared .stage-number {
+  background: linear-gradient(135deg, #38b2ac 0%, #2c9a94 100%);
+}
+
+.cleared-indicator {
+  color: #38b2ac;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+/* パーフェクトクリアステージ */
+.perfect .stage-number {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.perfect-indicator {
+  color: #f59e0b;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+/* ロック済みステージ */
+.stage-button:disabled .stage-number {
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+}
+
+.locked-indicator {
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+}
+
+.lock-icon {
+  font-size: 14px;
+  margin-right: 4px;
+}
+
+/* スターアイコン */
+.star-icon {
+  color: #f59e0b;
+  margin-right: 6px;
+  font-size: 14px;
+  letter-spacing: -2px;
+}
+
+/* ホバー効果 */
+.stage-card:hover:not(.current-stage) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 10, 60, 0.12);
+}
+
+.stage-button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+/* フッターエリア */
+.stage-select-footer {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid rgba(210, 220, 250, 0.5);
+}
+
+/* 凡例 */
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+}
+
+.legend-icon {
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border-radius: 50%;
+}
+
+.legend-icon.current {
+  background-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.legend-icon.cleared {
+  background-color: #38b2ac;
+}
+
+.legend-icon.perfect {
+  background-color: #f59e0b;
+}
+
+/* スクロールバーのカスタマイズ */
+.stage-grid-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.stage-grid-container::-webkit-scrollbar-track {
+  background: rgba(200, 210, 240, 0.2);
+  border-radius: 4px;
+}
+
+.stage-grid-container::-webkit-scrollbar-thumb {
+  background: rgba(100, 120, 200, 0.3);
+  border-radius: 4px;
+}
+
+.stage-grid-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 120, 200, 0.5);
+}
+
+/* モバイル対応 */
+/* @media (max-width: 480px) {
+  .stage-grid-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .legend {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+} */

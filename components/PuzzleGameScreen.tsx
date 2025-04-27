@@ -264,32 +264,6 @@ const PuzzleGameScreen: React.FC<PuzzleGameScreenProps> = () => {
     [loadStageProgress]
   );
 
-  /*
-   * getProgress was removed as it's unused after refactoring.
-   * Initial progress loading and star calculation are handled in the useEffect hook
-   * that fetches stage data.
-   */
-  // const getProgress = useCallback(() => {
-  //   const loadedProgress = loadStageProgress();
-  //   setProgress(loadedProgress);
-  //   progressRef.current = loadedProgress; // Ensure ref is updated immediately
-  //   console.log("ステージの進捗データ:", loadedProgress);
-  //   // Calculate initial stars based on progress
-  //   let initialStars = 0;
-  //   Object.keys(loadedProgress).forEach((pId) => {
-  //     const stageData = stages.find((s) => s.id === pId);
-  //     if (stageData && loadedProgress[pId]) {
-  //       initialStars += loadedProgress[pId].emptyCount || 0;
-  //       if (Number(loadedProgress[pId].hintFlag) === 1 && stageData.number) {
-  //         initialStars -= stageData.number;
-  //       }
-  //     }
-  //   });
-  //   initialStars += 10; // Add initial bonus
-  //   setCurrentStars(Math.max(0, initialStars));
-  //   currentStarsRef.current = Math.max(0, initialStars);
-  // }, [loadStageProgress, stages]);
-
   // --- Game Logic ---
   const setInformation = (text: string, addLineFlag = false) => {
     setInformationText((prev) => (addLineFlag ? prev + "\n" + text : text));
@@ -377,7 +351,7 @@ const PuzzleGameScreen: React.FC<PuzzleGameScreenProps> = () => {
       }
 
       const idx = stages.findIndex((s) => s.id === stage.id);
-      setNowPlayingText(idx >= 0 ? `` : "");
+      setNowPlayingText(idx >= 0 ? `Stage ${idx + 1}` : "Stage 1");
     },
     [
       stages,
@@ -1262,10 +1236,7 @@ const PuzzleGameScreen: React.FC<PuzzleGameScreenProps> = () => {
     if (nextStep === 1) {
       setConfirmMessage("本当にいいんですか？");
       setConfirmStep(nextStep);
-    } else if (nextStep === 2) {
-      setConfirmMessage("もったいないですよ？");
-      setConfirmStep(nextStep);
-    } else if (nextStep === 3 && confirmAction) {
+    } else if (nextStep === 2 && confirmAction) {
       confirmAction(); // 最終確認後にアクション実行
       setIsConfirmModalOpen(false);
       setConfirmStep(0);
@@ -1411,40 +1382,95 @@ const PuzzleGameScreen: React.FC<PuzzleGameScreenProps> = () => {
     >
       {/* Header */}
       <div className="puzzle-header">
-        {/* ポイント表示 */}
-        <div
-          className="puzzle-header-item puzzle-header-stars"
-          ref={starDisplayRef}
-        >
-          <FontAwesomeIcon icon={faStar} className="star-icon" />
-          <span className="star-count">{currentStars}</span>
+        <div className="puzzle-header-top">
+          <div className="stage-indicator">
+            <div className="stage-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M12 2L4 6V12L12 16L20 12V6L12 2Z"
+                  fill="currentColor"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                />
+              </svg>
+            </div>
+            <h3 className="stage-title">繋げるパズル</h3>
+          </div>
+
+          <div className="stage-name">{nowPlayingText}</div>
         </div>
-        {/* 現在のステージ */}
-        <div className="puzzle-header-item puzzle-header-stage-name">
-          {nowPlayingText}
+
+        <div className="puzzle-header-bottom">
+          <div className="stars-container" ref={starDisplayRef}>
+            <div className="stars-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+              </svg>
+            </div>
+            <span className="stars-count">{currentStars}</span>
+          </div>
+
+          <div className="buttons-container">
+            <button className="puzzle-button hint-button" onClick={buyHint}>
+              <div className="button-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  />
+                  <path
+                    d="M12 17v.01M12 13.75a1.25 1.25 0 100-2.5 1.25 1.25 0 000 2.5z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+              <span>ヒント</span>
+            </button>
+
+            <button
+              className="puzzle-button select-button"
+              ref={coolButtonRef}
+              onClick={handleOpenModal}
+            >
+              <div className="button-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M4 6h16M4 12h16M4 18h16"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+              <span>ステージ</span>
+            </button>
+          </div>
         </div>
-        {/* ヒント購入ボタン */}
-        <button
-          className="puzzle-header-item puzzle-hint-button"
-          onClick={buyHint}
-        >
-          ヒント購入
-        </button>
-        {/* ステージ選択ボタン */}
-        <button
-          className="puzzle-header-item puzzle-header-button"
-          ref={coolButtonRef} // refは残す (cool-buttonのJS用だが、他で使わないなら削除可)
-          onClick={handleOpenModal}
-          // onMouseMove={handleCoolButtonMouseMove} // cool-button用なので削除
-        >
-          ステージ選択
-        </button>
       </div>
 
       {/* Hint Button (Moved to header) */}
 
       {/* Information Area */}
-      <div id="information">
+      <div id="information" className="p-4">
         <p style={{ whiteSpace: "pre-wrap" }}>{informationText}</p>{" "}
         {/* Use pre-wrap for newlines */}
       </div>
@@ -1518,24 +1544,91 @@ const PuzzleGameScreen: React.FC<PuzzleGameScreenProps> = () => {
               ×
             </button>
             <div id="modal-content">
-              <div id="stage-container">
+              <h2 className="stage-select-title">ステージを選択</h2>
+              <div className="stage-grid-container">
                 {stages.map((stage, index) => {
                   const stageProgress = progress[stage.id];
+                  const isCleared = stageProgress?.clearFlag === 2;
                   const isPerfect = stageProgress?.clearFlag === 3;
+                  const isCurrentStage = currentStage?.id === stage.id;
                   const hue = (index * (360 / stages.length)) % 360;
+
                   return (
-                    <button
+                    <div
                       key={stage.id || index}
-                      onClick={() => handleStageSelect(index)}
-                      style={{
-                        backgroundColor: `hsl(${hue}, 70%, 50%)`,
-                        color: "#fff",
-                      }}
+                      className={`stage-card ${
+                        isCurrentStage ? "current-stage" : ""
+                      } ${isPerfect ? "perfect" : ""} ${
+                        isCleared && !isPerfect ? "cleared" : ""
+                      }`}
+                      style={
+                        {
+                          "--stage-hue": `${hue}`,
+                        } as React.CSSProperties
+                      }
                     >
-                      Stage {index + 1} {isPerfect ? "✅" : ""}
-                    </button>
+                      <button
+                        onClick={() => handleStageSelect(index)}
+                        className="stage-button"
+                        disabled={
+                          !isCleared &&
+                          index > 0 &&
+                          !progress[stages[index - 1]?.id]?.clearFlag
+                        }
+                      >
+                        <div className="stage-number">{index + 1}</div>
+                        <div className="stage-details">
+                          <div className="stage-name">
+                            {`ステージ ${index + 1}`}
+                          </div>
+                          <div className="stage-status">
+                            {isCurrentStage && (
+                              <span className="playing-indicator">
+                                <span className="playing-dot"></span>
+                                プレイ中
+                              </span>
+                            )}
+                            {isPerfect && (
+                              <span className="perfect-indicator">
+                                <span className="star-icon">★★★</span>
+                                パーフェクト
+                              </span>
+                            )}
+                            {isCleared && !isPerfect && (
+                              <span className="cleared-indicator">
+                                <span className="star-icon">★★</span>
+                                クリア済
+                              </span>
+                            )}
+                            {!isCleared && !isCurrentStage && (
+                              <span className="locked-indicator">
+                                {index > 0 &&
+                                !progress[stages[index - 1]?.id]?.clearFlag ? (
+                                  <span className="lock-icon">🔒</span>
+                                ) : (
+                                  <span className="star-icon">☆☆☆</span>
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    </div>
                   );
                 })}
+              </div>
+              <div className="stage-select-footer">
+                <div className="legend">
+                  <div className="legend-item">
+                    <span className="legend-icon current"></span> プレイ中
+                  </div>
+                  <div className="legend-item">
+                    <span className="legend-icon cleared"></span> クリア済
+                  </div>
+                  <div className="legend-item">
+                    <span className="legend-icon perfect"></span> パーフェクト
+                  </div>
+                </div>
               </div>
             </div>
           </div>

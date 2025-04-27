@@ -374,7 +374,7 @@ export default function Home() {
     <div className="h-dvh w-dvw flex flex-col text-white">
       <main
         ref={mainContentRef}
-        className="flex flex-grow container mx-auto px-4 py-8"
+        className="flex flex-grow container mx-auto px-4 py-4"
       >
         {/* 画面表示切り替え */}
         {screen === "home" && (
