@@ -413,12 +413,12 @@ const CatGame: React.FC<CatGameProps> = ({
           return {
             ...prev,
             message:
-              "現在地に留まることはできません。隣接ノードを選んでください。",
+              "現在地に留まることはできません。",
           };
         } else {
           return {
             ...prev,
-            message: `そこへは移動できません。隣接するノードを選んでください。`,
+            message: `そこへは移動できません。`,
           };
         }
       });

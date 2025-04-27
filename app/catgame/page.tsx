@@ -21,6 +21,7 @@ export default function CatGamePage() {
 
   // Sound hook for cat sound
   const [playCat] = useSound("/sounds/cat.mp3", { volume: 0.5 });
+  const [playFanfare] = useSound("/sounds/fanfare.mp3", { volume: 0.3 });
 
   // State for answer playback (moved from Game.tsx)
   const [isPlayingBack, setIsPlayingBack] = useState(false);
@@ -143,11 +144,12 @@ export default function CatGamePage() {
         return newCleared;
       });
       // Play the cat sound on stage clear
-      if (playCat) {
+      if (playCat && playFanfare) {
         playCat();
+        playFanfare();
       }
     },
-    [playCat]
+    [playCat, playFanfare]
   ); // Add playCatSound dependency
 
   const handleOpenModal = () => {
