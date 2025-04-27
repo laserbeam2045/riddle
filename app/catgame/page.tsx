@@ -164,8 +164,8 @@ export default function CatGamePage() {
       catHowl.play();
     } else {
       // フォールバック: 両方同時に再生
-      playCat && playCat();
-      playClear && playClear();
+      if (playCat) playCat();
+      if (playClear) playClear();
     }
   }, [playCat, playClear, catHowl, fanfareHowl]);
 
