@@ -383,7 +383,7 @@ const CatGame: React.FC<CatGameProps> = ({
               message: resultMessage,
             };
           } else {
-            playMove && playMove();
+            if (playMove) playMove();
             // catサウンド再生はここで行わない
           }
           setTimeout(moveMouse, 700);
