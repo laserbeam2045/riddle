@@ -1420,14 +1420,16 @@ const PuzzleGameScreen: React.FC<PuzzleGameScreenProps> = () => {
 
           <div className="buttons-container">
             <button className="puzzle-button hint-button" onClick={buyHint}>
-              <div className="button-icon">
+              <div className="button-icon text-white">
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
+                  width="100%"
                   xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
                     d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"
+                    color="#fff"
                     stroke="currentColor"
                     strokeWidth="1.5"
                   />
@@ -1451,6 +1453,7 @@ const PuzzleGameScreen: React.FC<PuzzleGameScreenProps> = () => {
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
+                  width="100%"
                   xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
@@ -1596,7 +1599,7 @@ const PuzzleGameScreen: React.FC<PuzzleGameScreenProps> = () => {
                             )}
                             {isCleared && !isPerfect && (
                               <span className="cleared-indicator">
-                                <span className="star-icon">★★</span>
+                                <span className="star-icon">★★☆</span>
                                 クリア済
                               </span>
                             )}
@@ -1606,7 +1609,8 @@ const PuzzleGameScreen: React.FC<PuzzleGameScreenProps> = () => {
                                 !progress[stages[index - 1]?.id]?.clearFlag ? (
                                   <span className="lock-icon">🔒</span>
                                 ) : (
-                                  <span className="star-icon">☆☆☆</span>
+                                  // <span className="star-icon">☆☆☆</span>
+                                  <></>
                                 )}
                               </span>
                             )}
