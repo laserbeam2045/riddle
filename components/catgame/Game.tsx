@@ -10,7 +10,6 @@ import React, {
 import Confetti from "react-confetti";
 import GraphDisplay from "./GraphDisplay";
 import GameInfo from "./GameInfo";
-import useSound from "use-sound";
 import { GameState, StageData, NodeData, LinkData } from "./types";
 
 type AdjacencyList = { [key: string]: string[] };
@@ -18,9 +17,11 @@ type AdjacencyList = { [key: string]: string[] };
 interface CatGameProps {
   stageData: StageData;
   onStageClear: () => void;
-  isPlaybackActive: boolean; // Added: Is answer playback active?
-  playbackMessage: string; // Added: Message to display during playback
-  currentPlaybackState?: [string, string]; // Added: Optional [catPos, mousePos] during playback
+  isPlaybackActive: boolean;
+  playbackMessage: string;
+  currentPlaybackState?: [string, string];
+  playMove?: () => void;
+  playCat?: () => void;
 }
 
 // クリア履歴の型定義
@@ -40,15 +41,16 @@ interface ClearStatus {
 
 // Minimax計算用の型
 type Memo = { [key: string]: number };
-const MAX_AI_DEPTH = 20; // Increased depth for better AI
-// Removed PLAYBACK_INTERVAL_MS
+const MAX_AI_DEPTH = 20; 
 
 const CatGame: React.FC<CatGameProps> = ({
   stageData,
   onStageClear,
-  isPlaybackActive, // Destructure new props
+  isPlaybackActive,
   playbackMessage,
   currentPlaybackState,
+  playMove,
+  playCat,
 }) => {
   const graphDisplayData = useMemo(() => {
     // Nodes are already in NodeData format
@@ -88,9 +90,6 @@ const CatGame: React.FC<CatGameProps> = ({
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const memoRef = useRef<Memo>({});
   const [clearStatus, setClearStatus] = useState<ClearStatus | null>(null);
-  // Removed playback state (isPlayingBack, playbackStep, playbackIntervalRef)
-
-  const [playMove] = useSound("/sounds/move.mp3", { volume: 0.5 });
 
   // --- Effects ---
 
@@ -141,8 +140,6 @@ const CatGame: React.FC<CatGameProps> = ({
       message: "猫のターン",
     });
     setShowConfetti(false);
-
-    // Removed playback state reset logic
   }, [stageData]);
 
   // Confetti Timer
@@ -156,19 +153,18 @@ const CatGame: React.FC<CatGameProps> = ({
     }
   }, [showConfetti]);
 
-  // Effect to call onStageClear when game ends successfully
+  // --- クリア時にonStageClearを一度だけ呼ぶ ---
+  const prevGameEndedRef = useRef(false);
   useEffect(() => {
-    // Check if the game just ended and the cat won (mouseNodeId matches catNodeId)
-    if (gameState.gameEnded && gameState.catNodeId === gameState.mouseNodeId) {
-      onStageClear(); // Call the callback passed from the parent
+    if (
+      gameState.gameEnded &&
+      gameState.catNodeId === gameState.mouseNodeId &&
+      !prevGameEndedRef.current
+    ) {
+      onStageClear();
     }
-    // Dependency includes gameState.gameEnded to trigger when it changes,
-    // and onStageClear in case the callback itself changes (though unlikely for stable functions).
-    // Also include catNodeId and mouseNodeId to ensure the condition is checked with the latest state.
-    // Remove onStageClear from dependencies to prevent infinite loops
-  }, [gameState.gameEnded, gameState.catNodeId, gameState.mouseNodeId]);
-
-  // Removed playback interval cleanup effect
+    prevGameEndedRef.current = gameState.gameEnded;
+  }, [gameState.gameEnded, gameState.catNodeId, gameState.mouseNodeId, onStageClear]);
 
   // --- Callbacks ---
 
@@ -181,8 +177,8 @@ const CatGame: React.FC<CatGameProps> = ({
       const newEntry: ClearHistoryEntry = {
         graphId: stageData.graph_id,
         playerMoves: playerMoves,
-        minMoves: stageData.minimax_cat_moves, // Use renamed key
-        isOptimal: playerMoves <= stageData.minimax_cat_moves, // Use renamed key
+        minMoves: stageData.minimax_cat_moves,
+        isOptimal: playerMoves <= stageData.minimax_cat_moves,
         timestamp: Date.now(),
       };
       try {
@@ -204,7 +200,7 @@ const CatGame: React.FC<CatGameProps> = ({
         console.error("LocalStorage への保存に失敗しました:", error);
       }
     },
-    [stageData.graph_id, stageData.minimax_cat_moves, clearStatus] // Use renamed key in dependencies
+    [stageData.graph_id, stageData.minimax_cat_moves, clearStatus]
   );
 
   // Minimax Calculation Helper
@@ -362,31 +358,23 @@ const CatGame: React.FC<CatGameProps> = ({
         message: "猫のターン",
       };
     });
-  }, [graphDisplayData.adj, calculateMinimaxMove]); // 依存配列
+  }, [graphDisplayData.adj, calculateMinimaxMove]);
 
-  // Node Click Handler
   const handleNodeClick = useCallback(
-    // ノードクリック処理
-    (clickedNodeId: string) => {
+    (nodeId: string) => {
       setGameState((prev) => {
-        // Disable clicks during playback or if game ended or not cat's turn
         if (isPlaybackActive || prev.gameEnded || prev.currentPlayer !== "cat")
-          // Use isPlaybackActive prop
           return prev;
-
-        // 有効な移動かチェック
-        if (graphDisplayData.adj[prev.catNodeId]?.includes(clickedNodeId)) {
-          const newCatNodeId = clickedNodeId;
+        if (graphDisplayData.adj[prev.catNodeId]?.includes(nodeId)) {
+          const newCatNodeId = nodeId;
           const newTurnCount = prev.turnCount + 1;
-          // 勝利判定
           if (newCatNodeId === prev.mouseNodeId) {
-            // onStageClear(); // Removed direct call from here
-            saveClearHistory(newTurnCount); // 履歴保存 (これはstate更新ではないのでOK)
-            setShowConfetti(true); // 紙吹雪表示 (これもOK)
-            const isOptimal = newTurnCount <= stageData.minimax_cat_moves; // Use renamed key
+            saveClearHistory(newTurnCount);
+            setShowConfetti(true);
+            const isOptimal = newTurnCount <= stageData.minimax_cat_moves;
             const resultMessage = isOptimal
-              ? `最短手数 (${stageData.minimax_cat_moves}手) でクリア！🎉` // Use renamed key
-              : `クリア！ (${newTurnCount}手) - 最短: ${stageData.minimax_cat_moves}手`; // Use renamed key
+              ? `最短手数 (${stageData.minimax_cat_moves}手) でクリア！🎉`
+              : `クリア！ (${newTurnCount}手) - 最短: ${stageData.minimax_cat_moves}手`;
             return {
               ...prev,
               catNodeId: newCatNodeId,
@@ -396,10 +384,9 @@ const CatGame: React.FC<CatGameProps> = ({
               message: resultMessage,
             };
           } else {
-            playMove();
+            playMove && playMove();
           }
-          // 鼠のターンへ移行
-          setTimeout(moveMouse, 700); // 鼠の思考時間を考慮して遅延実行
+          setTimeout(moveMouse, 700);
           return {
             ...prev,
             catNodeId: newCatNodeId,
@@ -408,12 +395,10 @@ const CatGame: React.FC<CatGameProps> = ({
             message: "鼠のターン",
           };
         }
-        // 無効な移動
-        else if (clickedNodeId === prev.catNodeId) {
+        else if (nodeId === prev.catNodeId) {
           return {
             ...prev,
-            message:
-              "現在地に留まることはできません。",
+            message: "現在地に留まることはできません。",
           };
         } else {
           return {
@@ -423,17 +408,8 @@ const CatGame: React.FC<CatGameProps> = ({
         }
       });
     },
-    [
-      playMove,
-      moveMouse,
-      graphDisplayData.adj,
-      saveClearHistory,
-      stageData.minimax_cat_moves,
-      isPlaybackActive, // Add isPlaybackActive dependency
-    ]
+    [isPlaybackActive, graphDisplayData.adj, moveMouse, saveClearHistory, stageData.minimax_cat_moves, playMove]
   );
-
-  // Removed handleShowAnswer callback
 
   // --- Render ---
 
@@ -469,20 +445,19 @@ const CatGame: React.FC<CatGameProps> = ({
       )}
       {/* Game Info Area */}
       <GameInfo
-        currentPlayer={displayCurrentPlayer} // Use display value
-        turnCount={gameState.turnCount} // Turn count might not be relevant during playback, keep internal for now
+        currentPlayer={displayCurrentPlayer} 
+        turnCount={gameState.turnCount} 
         theoreticalMinTurns={stageData.minimax_cat_moves}
-        message={displayMessage} // Use display value
+        message={displayMessage} 
         graphId={stageData.graph_id}
         clearStatus={clearStatus}
-        // Removed props related to answer button
       />
       {/* Graph Display Area */}
       <div className="w-full h-[auto] mb-4">
         <GraphDisplay
-          catNodeId={displayCatNodeId} // Use display value
-          mouseNodeId={displayMouseNodeId} // Use display value
-          currentPlayer={displayCurrentPlayer} // Use display value (null during playback)
+          catNodeId={displayCatNodeId} 
+          mouseNodeId={displayMouseNodeId} 
+          currentPlayer={displayCurrentPlayer} 
           onNodeClick={handleNodeClick}
           nodes={graphDisplayData.nodes}
           links={graphDisplayData.links}

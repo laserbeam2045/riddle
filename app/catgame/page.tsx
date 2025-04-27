@@ -18,10 +18,25 @@ export default function CatGamePage() {
   const [isStageModalOpen, setIsStageModalOpen] = useState(false);
   const [retryCounter, setRetryCounter] = useState(0);
   const [clearedStages, setClearedStages] = useState<Set<number>>(new Set());
+  const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
 
-  // Sound hook for cat sound
-  const [playCat] = useSound("/sounds/cat.mp3", { volume: 0.5 });
-  const [playFanfare] = useSound("/sounds/fanfare.mp3", { volume: 0.3 });
+  // --- サウンド ---
+  // moveサウンドのみ管理。cat/fanfareサウンドは完全に削除
+  const [playMove] = useSound("/sounds/move.mp3", {
+    volume: 0.5,
+    soundEnabled: isAudioUnlocked,
+  });
+  const [playCat, { sound: catHowl }] = useSound("/sounds/cat.mp3", {
+    volume: 0.5,
+    soundEnabled: isAudioUnlocked,
+  });
+  const [playClear, { sound: fanfareHowl }] = useSound("/sounds/fanfare.mp3", {
+    volume: 0.3,
+    soundEnabled: isAudioUnlocked,
+  });
+
+  const playClearRef = useRef<() => void>(() => {});
+  playClearRef.current = playClear;
 
   // State for answer playback (moved from Game.tsx)
   const [isPlayingBack, setIsPlayingBack] = useState(false);
@@ -127,30 +142,32 @@ export default function CatGamePage() {
     // Play sound?
   }, []);
 
-  const handleStageClear = useCallback(
-    (stageIndex: number) => {
-      setClearedStages((prevCleared) => {
-        const newCleared = new Set(prevCleared);
-        newCleared.add(stageIndex);
-        // Save to localStorage
-        try {
-          localStorage.setItem(
-            LOCAL_STORAGE_KEY,
-            JSON.stringify(Array.from(newCleared))
-          );
-        } catch (e) {
-          console.error("Failed to save cleared stages to localStorage:", e);
-        }
-        return newCleared;
-      });
-      // Play the cat sound on stage clear
-      if (playCat && playFanfare) {
-        playCat();
-        playFanfare();
+  const handleStageClear = useCallback((stageIdx: number) => {
+    setClearedStages((prevCleared) => {
+      const newCleared = new Set(prevCleared);
+      newCleared.add(stageIdx);
+      try {
+        localStorage.setItem(
+          LOCAL_STORAGE_KEY,
+          JSON.stringify(Array.from(newCleared))
+        );
+      } catch (e) {
+        console.error("Failed to save cleared stages to localStorage:", e);
       }
-    },
-    [playCat, playFanfare]
-  ); // Add playCatSound dependency
+      return newCleared;
+    });
+    // クリア時: catサウンド→終わったらfanfare
+    if (catHowl && fanfareHowl) {
+      catHowl.once("end", () => {
+        fanfareHowl.play();
+      });
+      catHowl.play();
+    } else {
+      // フォールバック: 両方同時に再生
+      playCat && playCat();
+      playClear && playClear();
+    }
+  }, [playCat, playClear, catHowl, fanfareHowl]);
 
   const handleOpenModal = () => {
     setIsStageModalOpen(true);
@@ -209,140 +226,161 @@ export default function CatGamePage() {
   const isAnswerAvailable =
     !!selectedStage?.optimal_path && selectedStage.optimal_path.length > 0;
 
+  // --- サウンド解放用タップ ---
+  const handleUnlockAudio = useCallback(() => {
+    if (!isAudioUnlocked) {
+      setIsAudioUnlocked(true);
+    }
+  }, [isAudioUnlocked]);
+
   return (
     <div className="h-dvh w-dvw flex flex-col text-white bg-gray-900">
-      {/* Header Area for Buttons */}
-      <header className="p-3 flex justify-between items-center gap-3 border-b border-gray-700">
-        {/* Retry Button */}
-        <button
-          onClick={handleRetry}
-          disabled={
-            isLoading ||
-            error !== null ||
-            selectedStageIndex === null ||
-            isPlayingBack
-          } // Disable during playback
-          className="text-sm px-2 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-md text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      {!isAudioUnlocked && (
+        <div
+          className="absolute inset-0 bg-black bg-opacity-80 z-50 flex flex-col items-center justify-center text-white text-2xl select-none"
+          style={{ cursor: "pointer" }}
+          onClick={handleUnlockAudio}
         >
-          リトライ
-        </button>
-        {/* Stage Select Button */}
-        <button
-          onClick={handleOpenModal}
-          disabled={
-            isLoading ||
-            error !== null ||
-            allStages.length === 0 ||
-            isPlayingBack
-          } // Disable during playback
-          className="text-sm px-2 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {isLoading ? "Loading..." : error ? "Error" : "ステージ選択"}
-        </button>
-        {/* Show Answer Button (New) */}
-        <button
-          onClick={handleShowAnswer}
-          disabled={
-            !isAnswerAvailable ||
-            isPlayingBack ||
-            isLoading ||
-            error !== null ||
-            selectedStageIndex === null
-          }
-          className="text-sm px-2 py-2 bg-green-600 hover:bg-green-700 rounded-md text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {isPlayingBack ? "再生中..." : "答えを見る"}
-        </button>
-      </header>
-      {/* Main content area */}
-      <main className="flex flex-col flex-grow container mx-auto px-4 py-0 items-center">
-        {/* Game Component */}
-        <div className="w-full flex justify-center">
-          {selectedStage ? (
-            <CatGame
-              stageData={selectedStage}
-              key={`${selectedStageIndex}-${retryCounter}`} // Key includes retryCounter
-              onStageClear={() =>
-                handleStageClear(selectedStageIndex as number)
+          <div className="mb-4">TOUCH TO START</div>
+          <div className="text-base opacity-70">タップしてゲーム開始・音を有効化</div>
+        </div>
+      )}
+      {isAudioUnlocked && (
+        <div className="w-full h-full">
+          {/* Header Area for Buttons */}
+          <header className="p-3 flex justify-between items-center gap-3 border-b border-gray-700">
+            {/* Retry Button */}
+            <button
+              onClick={handleRetry}
+              disabled={
+                isLoading ||
+                error !== null ||
+                selectedStageIndex === null ||
+                isPlayingBack
+              } // Disable during playback
+              className="text-sm px-2 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-md text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              リトライ
+            </button>
+            {/* Stage Select Button */}
+            <button
+              onClick={handleOpenModal}
+              disabled={
+                isLoading ||
+                error !== null ||
+                allStages.length === 0 ||
+                isPlayingBack
+              } // Disable during playback
+              className="text-sm px-2 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isLoading ? "Loading..." : error ? "Error" : "ステージ選択"}
+            </button>
+            {/* Show Answer Button (New) */}
+            <button
+              onClick={handleShowAnswer}
+              disabled={
+                !isAnswerAvailable ||
+                isPlayingBack ||
+                isLoading ||
+                error !== null ||
+                selectedStageIndex === null
               }
-              // Pass playback state down
-              isPlaybackActive={isPlayingBack}
-              playbackMessage={playbackMessage}
-              currentPlaybackState={currentPlaybackState}
-            />
-          ) : (
-            <div className="text-center p-4 text-gray-400">
-              {isLoading
-                ? "ステージを読み込み中..."
-                : error
-                ? `エラー: ${error}`
-                : "ステージを選択してください"}
+              className="text-sm px-2 py-2 bg-green-600 hover:bg-green-700 rounded-md text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isPlayingBack ? "再生中..." : "答えを見る"}
+            </button>
+          </header>
+          {/* Main content area */}
+          <main className="flex flex-col flex-grow container mx-auto px-4 py-0 items-center">
+            {/* Game Component */}
+            <div className="w-full flex justify-center">
+              {selectedStage ? (
+                <CatGame
+                  stageData={selectedStage}
+                  key={`${selectedStageIndex}-${retryCounter}`}
+                  onStageClear={() =>
+                    handleStageClear(selectedStageIndex as number)
+                  }
+                  isPlaybackActive={isPlayingBack}
+                  playbackMessage={playbackMessage}
+                  currentPlaybackState={currentPlaybackState}
+                  playMove={playMove}
+                  playCat={playCat}
+                />
+              ) : (
+                <div className="text-center p-4 text-gray-400">
+                  {isLoading
+                    ? "ステージを読み込み中..."
+                    : error
+                    ? `エラー: ${error}`
+                    : "ステージを選択してください"}
+                </div>
+              )}
+            </div>
+          </main>
+          {/* Stage Selection Modal */}
+          {isStageModalOpen && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+              onClick={handleCloseModal} // Close on overlay click
+            >
+              <div
+                className="bg-gray-800 rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto relative"
+                onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal content
+              >
+                <button
+                  onClick={() => handleCloseModal()} // Explicit close button
+                  className="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl font-bold"
+                  aria-label="Close modal"
+                >
+                  &times;
+                </button>
+                <h2 className="text-xl font-semibold mb-4 text-center">
+                  ステージ選択
+                </h2>
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                  {allStages.map((stage, index) => {
+                    const isCleared = clearedStages.has(index);
+                    // Basic coloring like PuzzleGameScreen (can be enhanced)
+                    const hue = (index * (360 / allStages.length)) % 360;
+                    const bgColor = isCleared
+                      ? `hsl(${hue}, 30%, 40%)`
+                      : `hsl(${hue}, 60%, 50%)`; // Dim cleared stages
+                    const textColor = isCleared ? "text-gray-400" : "text-white";
+
+                    return (
+                      <button
+                        key={stage.graph_id || index}
+                        onClick={() => handleStageSelect(index)}
+                        className={`p-3 rounded-md font-medium text-center aspect-square flex flex-col items-center justify-center transition-transform transform hover:scale-105 relative ${textColor}`}
+                        style={{ backgroundColor: bgColor }}
+                        title={`Nodes: ${stage.nodes.length}, Moves: ${
+                          stage.minimax_cat_moves // Use renamed key
+                        }${isCleared ? " (クリア済み)" : ""}`}
+                      >
+                        {isCleared && (
+                          <span
+                            className="absolute top-1 right-1 text-lg"
+                            role="img"
+                            aria-label="Cleared"
+                          >
+                            ✅
+                          </span>
+                        )}
+                        <span className="text-lg">{index + 1}</span>
+                        <span className="text-xs mt-1">
+                          ({stage.nodes.length}N/{stage.minimax_cat_moves}M){" "}
+                          {/* Use renamed key */}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
-        </div>
-      </main>
-      {/* Stage Selection Modal */}
-      {isStageModalOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
-          onClick={handleCloseModal} // Close on overlay click
-        >
-          <div
-            className="bg-gray-800 rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto relative"
-            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal content
-          >
-            <button
-              onClick={() => handleCloseModal()} // Explicit close button
-              className="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl font-bold"
-              aria-label="Close modal"
-            >
-              &times;
-            </button>
-            <h2 className="text-xl font-semibold mb-4 text-center">
-              ステージ選択
-            </h2>
-            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
-              {allStages.map((stage, index) => {
-                const isCleared = clearedStages.has(index);
-                // Basic coloring like PuzzleGameScreen (can be enhanced)
-                const hue = (index * (360 / allStages.length)) % 360;
-                const bgColor = isCleared
-                  ? `hsl(${hue}, 30%, 40%)`
-                  : `hsl(${hue}, 60%, 50%)`; // Dim cleared stages
-                const textColor = isCleared ? "text-gray-400" : "text-white";
-
-                return (
-                  <button
-                    key={stage.graph_id || index}
-                    onClick={() => handleStageSelect(index)}
-                    className={`p-3 rounded-md font-medium text-center aspect-square flex flex-col items-center justify-center transition-transform transform hover:scale-105 relative ${textColor}`}
-                    style={{ backgroundColor: bgColor }}
-                    title={`Nodes: ${stage.nodes.length}, Moves: ${
-                      stage.minimax_cat_moves // Use renamed key
-                    }${isCleared ? " (クリア済み)" : ""}`}
-                  >
-                    {isCleared && (
-                      <span
-                        className="absolute top-1 right-1 text-lg"
-                        role="img"
-                        aria-label="Cleared"
-                      >
-                        ✅
-                      </span>
-                    )}
-                    <span className="text-lg">{index + 1}</span>
-                    <span className="text-xs mt-1">
-                      ({stage.nodes.length}N/{stage.minimax_cat_moves}M){" "}
-                      {/* Use renamed key */}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </div>
       )}
     </div>
   );
-  // } // Remove extra closing brace from previous error
 }

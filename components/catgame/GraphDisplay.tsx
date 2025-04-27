@@ -113,9 +113,9 @@ const GraphDisplay: React.FC<GraphDisplayProps> = ({
     // --- Apply Node Styles (Cat, Mouse, Highlight) ---
     nodeSelection
       .style("fill", (d) => {
-        if (d.id === catNodeId) return "blue";
-        if (d.id === mouseNodeId) return "red";
-        return "#ccc"; // Default node color
+        // if (d.id === catNodeId) return "blue";
+        // if (d.id === mouseNodeId) return "red";
+        return "#bbb"; // Default node color
       })
       .style("stroke", (d) =>
         currentPlayer === "cat" && adj[catNodeId]?.includes(d.id)
@@ -154,6 +154,7 @@ const GraphDisplay: React.FC<GraphDisplayProps> = ({
   // 画像サイズ
   const imgWidth = 50;
   const imgHeight = 50;
+  const offsetX = 3;
   const offsetY = 25;
 
   // 猫・鼠の座標
@@ -184,7 +185,7 @@ const GraphDisplay: React.FC<GraphDisplayProps> = ({
           height={imgHeight}
           style={{
             position: "absolute",
-            left: catPos.x - imgWidth / 2,
+            left: catPos.x - imgWidth / 2 + offsetX,
             top: catPos.y - imgHeight + offsetY,
             transition: "left 0.4s cubic-bezier(0.22, 1, 0.36, 1), top 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
             zIndex: 10,
@@ -200,7 +201,7 @@ const GraphDisplay: React.FC<GraphDisplayProps> = ({
           height={imgHeight}
           style={{
             position: "absolute",
-            left: mousePos.x - imgWidth / 2,
+            left: mousePos.x - imgWidth / 2 + offsetX,
             top: mousePos.y - imgHeight + offsetY,
             transition: "left 0.4s cubic-bezier(0.22, 1, 0.36, 1), top 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
             zIndex: 10,
