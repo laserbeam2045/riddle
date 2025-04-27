@@ -50,7 +50,6 @@ const CatGame: React.FC<CatGameProps> = ({
   playbackMessage,
   currentPlaybackState,
   playMove,
-  playCat,
 }) => {
   const graphDisplayData = useMemo(() => {
     // Nodes are already in NodeData format

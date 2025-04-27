@@ -112,7 +112,7 @@ const GraphDisplay: React.FC<GraphDisplayProps> = ({
 
     // --- Apply Node Styles (Cat, Mouse, Highlight) ---
     nodeSelection
-      .style("fill", (d) => {
+      .style("fill", () => {
         // if (d.id === catNodeId) return "blue";
         // if (d.id === mouseNodeId) return "red";
         return "#bbb"; // Default node color
