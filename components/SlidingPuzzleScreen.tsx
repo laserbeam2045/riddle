@@ -785,8 +785,8 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           pieceImage,
           drawX - 1.0,
           drawY - 1.0,
-          CELL_SIZE + 1,
-          CELL_SIZE + 1
+          CELL_SIZE + 0,
+          CELL_SIZE + 0
         );
       } else {
         // フォールバック用の色
