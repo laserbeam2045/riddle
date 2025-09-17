@@ -1181,13 +1181,44 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           </div>
           <div className="hint-controls">
             <button
-              onClick={() => setIsPlayingHint(!isPlayingHint)}
+              onClick={() => {
+                if (!isPlayingHint) {
+                  // 再生開始時にスタート状態に戻す
+                  if (currentStage) {
+                    const resetState = {
+                      pieces: convertPositions(currentStage.startPositions),
+                      moves: 0,
+                      isCompleted: false,
+                    };
+                    setGameState(resetState);
+                    setSelectedPiece(null);
+                    // 履歴をリセット
+                    setGameHistory([resetState]);
+                    setCurrentHistoryIndex(0);
+                    setHintStep(0);
+                  }
+                }
+                setIsPlayingHint(!isPlayingHint);
+              }}
               className="puzzle-button hint-button"
             >
               {isPlayingHint ? "停止" : "再生"}
             </button>
             <button
               onClick={() => {
+                // リセット時にスタート状態に戻す
+                if (currentStage) {
+                  const resetState = {
+                    pieces: convertPositions(currentStage.startPositions),
+                    moves: 0,
+                    isCompleted: false,
+                  };
+                  setGameState(resetState);
+                  setSelectedPiece(null);
+                  // 履歴をリセット
+                  setGameHistory([resetState]);
+                  setCurrentHistoryIndex(0);
+                }
                 setHintStep(0);
                 setIsPlayingHint(false);
                 setIsHintPaused(false);
