@@ -11,6 +11,7 @@ import GameScreen from "../components/GameScreen";
 import ResultsScreen from "../components/ResultsScreen";
 import HintModal from "../components/HintModal";
 import PuzzleGameScreen from "../components/PuzzleGameScreen"; // パズルゲームコンポーネントをインポート
+import SlidingPuzzleScreen from "../components/SlidingPuzzleScreen"; // スライディングパズルコンポーネントをインポート
 
 // 謎解きのデータ型定義 (エクスポート)
 export interface Question {
@@ -83,9 +84,9 @@ export default function Home() {
   const [attemptCount, setAttemptCount] = useState(0); // 回答試行回数
   const [completedStages, setCompletedStages] = useState<number[]>([]); // クリア済みステージ
 
-  // 画面表示状態 (puzzleを追加)
+  // 画面表示状態 (puzzleとsliding-puzzleを追加)
   const [screen, setScreen] = useState<
-    "home" | "quiz-list" | "game" | "results" | "puzzle"
+    "home" | "quiz-list" | "game" | "results" | "puzzle" | "sliding-puzzle"
   >("home");
 
   const { quizData, loading, error } = useQuizData();
@@ -388,6 +389,10 @@ export default function Home() {
               // sounds.phone(); // 必要に応じて効果音
               setScreen("puzzle");
             }}
+            onStartSlidingPuzzle={() => {
+              // スライディングパズル開始ハンドラを追加
+              setScreen("sliding-puzzle");
+            }}
           />
         )}
         {screen === "quiz-list" && (
@@ -441,6 +446,9 @@ export default function Home() {
         )}
         {screen === "puzzle" && ( // パズルゲーム画面のレンダリング条件を追加
           <PuzzleGameScreen onReturnHome={handleReturnHome} /> // ホームに戻る関数を渡す
+        )}
+        {screen === "sliding-puzzle" && ( // スライディングパズル画面のレンダリング条件を追加
+          <SlidingPuzzleScreen onReturnHome={handleReturnHome} /> // ホームに戻る関数を渡す
         )}
       </main>
 
