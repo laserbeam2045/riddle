@@ -278,7 +278,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
 
   // EaseOut関数
   const easeOut = (t: number): number => {
-    return 1 - Math.pow(1 - t, 3);
+    return 1 - Math.pow(1 - t, 4); // より強いEaseOut効果
   };
 
   // 履歴にゲーム状態を追加
@@ -380,7 +380,10 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
 
         // アニメーション実行
         const startTime = Date.now();
-        const animationDuration = 200; // 200msに短縮
+        // 移動距離に応じてアニメーション時間を計算
+        const distance = Math.abs(newX - currentX) + Math.abs(newY - currentY);
+        const baseTime = 80; // 1マスあたりの基本時間（ms）
+        const animationDuration = Math.max(baseTime * distance, 120); // 最小120ms
 
         const animate = () => {
           const elapsed = Date.now() - startTime;
