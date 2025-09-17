@@ -82,7 +82,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
 
   const MAZE_SIZE = 11;
   const CELL_SIZE = 40;
-  const CLEARED_STAGES_KEY = "sliding_puzzle_cleared_stages";
+  const CLEARED_STAGES_KEY = "sliding_puzzle_cleared_stages2";
 
   // ステージの位置データを適切な型に変換するヘルパー関数
   const convertPositions = (positions: {
