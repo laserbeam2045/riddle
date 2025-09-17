@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHome, faRedo, faLightbulb } from "@fortawesome/free-solid-svg-icons";
+import {
+  faRedo,
+  faLightbulb,
+  faVolumeUp,
+  faVolumeMute,
+} from "@fortawesome/free-solid-svg-icons";
 
 interface SlidingPuzzleScreenProps {
   onReturnHome: () => void;
@@ -36,7 +41,7 @@ interface MazeCell {
   isPath: boolean;
 }
 
-const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = ({ onReturnHome }) => {
+const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   const [stages, setStages] = useState<Stage[]>([]);
   const [currentStage, setCurrentStage] = useState<Stage | null>(null);
   const [gameState, setGameState] = useState<GameState>({
@@ -46,32 +51,108 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = ({ onReturnHome 
   });
   const [selectedPiece, setSelectedPiece] = useState<number | null>(null);
   const [gameHistory, setGameHistory] = useState<GameState[]>([]);
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
   const [showSolution, setShowSolution] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showStageSelect, setShowStageSelect] = useState(false);
   const [hintStep, setHintStep] = useState(0);
   const [isPlayingHint, setIsPlayingHint] = useState(false);
   const [isHintPaused, setIsHintPaused] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
+  // const [isAnimating, setIsAnimating] = useState(false); // 現在未使用
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(
+    null
+  );
   const [draggedPiece, setDraggedPiece] = useState<number | null>(null);
-  const [animatingPieces, setAnimatingPieces] = useState<{[key: number]: {from: [number, number], to: [number, number], progress: number}}>({});
+  const [animatingPieces, setAnimatingPieces] = useState<{
+    [key: number]: {
+      from: [number, number];
+      to: [number, number];
+      progress: number;
+    };
+  }>({});
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [clearedStages, setClearedStages] = useState<Set<number>>(new Set());
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
   const hintTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pieceImagesRef = useRef<{ [key: number]: HTMLImageElement }>({});
+  const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
 
   const MAZE_SIZE = 11;
   const CELL_SIZE = 40;
+  const CLEARED_STAGES_KEY = "sliding_puzzle_cleared_stages";
+
+  // ステージの位置データを適切な型に変換するヘルパー関数
+  const convertPositions = (positions: {
+    [key: string]: [number, number] | number[];
+  }): { [key: number]: [number, number] } => {
+    return Object.fromEntries(
+      Object.entries(positions).map(([key, pos]) => [
+        parseInt(key),
+        Array.isArray(pos) ? ([pos[0], pos[1]] as [number, number]) : pos,
+      ])
+    ) as { [key: number]: [number, number] };
+  };
+
+  // LocalStorageからクリア済みステージを読み込む
+  const loadClearedStages = useCallback((): Set<number> => {
+    if (typeof window === "undefined") return new Set(); // SSR対応
+
+    try {
+      const saved = localStorage.getItem(CLEARED_STAGES_KEY);
+      if (saved) {
+        const stageArray = JSON.parse(saved) as number[];
+        return new Set(stageArray);
+      }
+    } catch (error) {
+      console.error("Failed to load cleared stages from localStorage:", error);
+    }
+    return new Set(); // デフォルトではクリア済みステージなし
+  }, []);
+
+  // LocalStorageにクリア済みステージを保存する
+  const saveClearedStages = useCallback((stages: Set<number>) => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const stageArray = Array.from(stages);
+      localStorage.setItem(CLEARED_STAGES_KEY, JSON.stringify(stageArray));
+    } catch (error) {
+      console.error("Failed to save cleared stages to localStorage:", error);
+    }
+  }, []);
+
+  // 音声ファイルの初期化
+  useEffect(() => {
+    const soundFiles = {
+      slide: "/sounds/slide.mp3",
+      modal: "/sounds/modal.mp3",
+      fill: "/sounds/fill.mp3",
+      decision: "/sounds/decision.mp3",
+      correct: "/sounds/correct.mp3",
+    };
+
+    Object.entries(soundFiles).forEach(([key, src]) => {
+      const audio = new Audio(src);
+      audio.volume = 0.3;
+      audio.preload = "auto";
+      audioRefs.current[key] = audio;
+    });
+  }, []);
+
+  // クリア済みステージの初期化
+  useEffect(() => {
+    setClearedStages(loadClearedStages());
+  }, [loadClearedStages]);
 
   // 画像読み込み
   useEffect(() => {
     const imageFiles = [
       "/images/sun.png",
       "/images/earth.png",
-      "/images/moon.png"
+      "/images/moon.png",
     ];
 
     let loadedCount = 0;
@@ -101,11 +182,15 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = ({ onReturnHome 
         if (data.length > 0) {
           const firstStage = data[0];
           setCurrentStage(firstStage);
-          setGameState({
-            pieces: { ...firstStage.startPositions },
+          const initialState = {
+            pieces: convertPositions(firstStage.startPositions),
             moves: 0,
             isCompleted: false,
-          });
+          };
+          setGameState(initialState);
+          // 初期状態を履歴に追加
+          setGameHistory([initialState]);
+          setCurrentHistoryIndex(0);
         }
       } catch (error) {
         console.error("Error loading stages:", error);
@@ -117,313 +202,481 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = ({ onReturnHome 
     loadStages();
   }, []);
 
-  // 勝利条件チェック
-  const checkWinCondition = useCallback((newPieces?: { [key: number]: [number, number] }) => {
-    if (!currentStage) return;
+  // 音声再生関数
+  const playSound = useCallback(
+    (soundKey: string) => {
+      if (!soundEnabled) return;
 
-    const piecesToCheck = newPieces || gameState.pieces;
+      const audio = audioRefs.current[soundKey];
+      if (audio) {
+        try {
+          audio.currentTime = 0; // 音声を最初から再生
+          audio.play().catch((e) => {
+            // ブラウザが音声再生を制限している場合のエラーを無視
+            console.log("Audio play prevented:", e);
+          });
+        } catch (error) {
+          console.log("Audio play error:", error);
+        }
+      }
+    },
+    [soundEnabled]
+  );
 
-    const isWin = Object.entries(currentStage.goalPositions).every(([pieceId, [goalX, goalY]]) => {
-      const id = parseInt(pieceId);
-      const [currentX, currentY] = piecesToCheck[id];
-      return currentX === goalX && currentY === goalY;
-    });
-
-    if (isWin) {
-      setGameState(prev => ({ ...prev, isCompleted: true }));
+  // スライド音停止関数
+  const stopSlideSound = useCallback(() => {
+    const audio = audioRefs.current["slide"];
+    if (audio) {
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+      } catch (error) {
+        console.log("Audio stop error:", error);
+      }
     }
-  }, [currentStage, gameState.pieces]);
+  }, []);
+
+  // 勝利条件チェック
+  const checkWinCondition = useCallback(
+    (newPieces?: { [key: number]: [number, number] }) => {
+      if (!currentStage) return;
+
+      const piecesToCheck = newPieces || gameState.pieces;
+
+      const isWin = Object.entries(currentStage.goalPositions).every(
+        ([pieceId, [goalX, goalY]]) => {
+          const id = parseInt(pieceId);
+          const [currentX, currentY] = piecesToCheck[id];
+          return currentX === goalX && currentY === goalY;
+        }
+      );
+
+      if (isWin) {
+        setGameState((prev) => ({ ...prev, isCompleted: true }));
+        // ステージクリア時にクリア済みステージに追加
+        if (currentStage?.id) {
+          setClearedStages((prev) => {
+            const newClearedStages = new Set(prev);
+            // 現在のステージをクリア済みに追加
+            newClearedStages.add(currentStage.id);
+            // 次のステージをプレイ可能にする（クリア済みではなくアンロック）
+            if (currentStage.id < 64) {
+              // 次のステージのIDをアンロックするだけ（クリア済みにはしない）
+              // 実際にはstage selection UIで次のステージがプレイ可能かチェックする
+            }
+            // LocalStorageに保存
+            saveClearedStages(newClearedStages);
+            return newClearedStages;
+          });
+        }
+        // ステージクリア音を再生
+        playSound("correct");
+      }
+    },
+    [currentStage, gameState.pieces, playSound, saveClearedStages]
+  );
 
   // EaseOut関数
   const easeOut = (t: number): number => {
     return 1 - Math.pow(1 - t, 3);
   };
 
-  // 駒の移動処理
-  const movePiece = useCallback((pieceId: number, direction: 'up' | 'down' | 'left' | 'right') => {
-    if (!currentStage || isAnimating) return;
-
-    const dx = direction === 'left' ? -1 : direction === 'right' ? 1 : 0;
-    const dy = direction === 'up' ? -1 : direction === 'down' ? 1 : 0;
-
-    const [currentX, currentY] = gameState.pieces[pieceId];
-    let newX = currentX;
-    let newY = currentY;
-
-    // 氷上を滑るように移動（障害物まで）
-    while (true) {
-      const nextX = newX + dx;
-      const nextY = newY + dy;
-
-      // 境界チェック
-      if (nextX < 0 || nextX >= MAZE_SIZE || nextY < 0 || nextY >= MAZE_SIZE) {
-        break;
-      }
-
-      // 壁チェック
-      if (currentStage.maze[nextY][nextX].isWall) {
-        break;
-      }
-
-      // 他の駒との衝突チェック
-      const hasCollision = Object.entries(gameState.pieces).some(([id, [x, y]]) => {
-        return parseInt(id) !== pieceId && x === nextX && y === nextY;
+  // 履歴にゲーム状態を追加
+  const addToHistory = useCallback(
+    (newState: GameState) => {
+      setGameHistory((prev) => {
+        const newHistory = prev.slice(0, currentHistoryIndex + 1);
+        newHistory.push(newState);
+        return newHistory;
       });
+      setCurrentHistoryIndex((prev) => prev + 1);
+    },
+    [currentHistoryIndex]
+  );
 
-      if (hasCollision) {
-        break;
-      }
-
-      newX = nextX;
-      newY = nextY;
+  // 一手戻る
+  const stepBackward = useCallback(() => {
+    if (currentHistoryIndex > 0) {
+      playSound("decision");
+      const prevState = gameHistory[currentHistoryIndex - 1];
+      setGameState(prevState);
+      setCurrentHistoryIndex((prev) => prev - 1);
+      setSelectedPiece(null);
     }
+  }, [currentHistoryIndex, gameHistory, playSound]);
 
-    // 位置が変わった場合のみ移動
-    if (newX !== currentX || newY !== currentY) {
-      setIsAnimating(true);
+  // 一手進める
+  const stepForward = useCallback(() => {
+    if (currentHistoryIndex < gameHistory.length - 1) {
+      playSound("decision");
+      const nextState = gameHistory[currentHistoryIndex + 1];
+      setGameState(nextState);
+      setCurrentHistoryIndex((prev) => prev + 1);
+      setSelectedPiece(null);
+    }
+  }, [currentHistoryIndex, gameHistory, playSound]);
 
-      // アニメーション設定
-      setAnimatingPieces({
-        [pieceId]: {
-          from: [currentX, currentY],
-          to: [newX, newY],
-          progress: 0
+  // 駒の移動処理
+  const movePiece = useCallback(
+    (pieceId: number, direction: "up" | "down" | "left" | "right") => {
+      if (!currentStage) return; // アニメーション中でも操作可能にする
+
+      const dx = direction === "left" ? -1 : direction === "right" ? 1 : 0;
+      const dy = direction === "up" ? -1 : direction === "down" ? 1 : 0;
+
+      const [currentX, currentY] = gameState.pieces[pieceId];
+      let newX = currentX;
+      let newY = currentY;
+
+      // 氷上を滑るように移動（障害物まで）
+      while (true) {
+        const nextX = newX + dx;
+        const nextY = newY + dy;
+
+        // 境界チェック
+        if (
+          nextX < 0 ||
+          nextX >= MAZE_SIZE ||
+          nextY < 0 ||
+          nextY >= MAZE_SIZE
+        ) {
+          break;
         }
-      });
 
-      // アニメーション実行
-      const startTime = Date.now();
-      const animationDuration = 600; // 600ms
+        // 壁チェック
+        if (currentStage.maze[nextY][nextX].isWall) {
+          break;
+        }
 
-      const animate = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / animationDuration, 1);
-        const easedProgress = easeOut(progress);
+        // 他の駒との衝突チェック
+        const hasCollision = Object.entries(gameState.pieces).some(
+          ([id, [x, y]]) => {
+            return parseInt(id) !== pieceId && x === nextX && y === nextY;
+          }
+        );
 
-        setAnimatingPieces(prev => ({
+        if (hasCollision) {
+          break;
+        }
+
+        newX = nextX;
+        newY = nextY;
+      }
+
+      // 位置が変わった場合のみ移動
+      if (newX !== currentX || newY !== currentY) {
+        // setIsAnimating(true); // 現在未使用
+        // スライド音を再生
+        playSound("slide");
+
+        // アニメーション設定
+        setAnimatingPieces({
           [pieceId]: {
             from: [currentX, currentY],
             to: [newX, newY],
-            progress: easedProgress
-          }
-        }));
+            progress: 0,
+          },
+        });
 
-        if (progress >= 1) {
-          // アニメーション完了
-          setAnimatingPieces({});
-          setIsAnimating(false);
+        // アニメーション実行
+        const startTime = Date.now();
+        const animationDuration = 200; // 200msに短縮
 
-          const updatedPieces = {
-            ...gameState.pieces,
-            [pieceId]: [newX, newY]
-          };
+        const animate = () => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / animationDuration, 1);
+          const easedProgress = easeOut(progress);
 
-          setGameState(prev => ({
-            ...prev,
-            pieces: updatedPieces,
-            moves: prev.moves + 1
+          setAnimatingPieces(() => ({
+            [pieceId]: {
+              from: [currentX, currentY],
+              to: [newX, newY],
+              progress: easedProgress,
+            },
           }));
 
-          // 勝利条件チェック（新しい位置で）
-          setTimeout(() => {
-            checkWinCondition(updatedPieces);
-          }, 100);
-        } else {
-          animationRef.current = requestAnimationFrame(animate);
-        }
-      };
+          if (progress >= 1) {
+            // アニメーション完了
+            setAnimatingPieces({});
+            // setIsAnimating(false); // 現在未使用
 
-      // 既存のアニメーションをキャンセル
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+            // スライド音を停止
+            stopSlideSound();
+
+            const updatedPieces: { [key: number]: [number, number] } = {
+              ...gameState.pieces,
+              [pieceId]: [newX, newY] as [number, number],
+            };
+
+            setGameState((prev) => ({
+              ...prev,
+              pieces: updatedPieces,
+              moves: prev.moves + 1,
+            }));
+
+            // 操作終了音を再生
+            playSound("fill");
+
+            // 履歴に追加
+            const newState: GameState = {
+              pieces: updatedPieces,
+              moves: gameState.moves + 1,
+              isCompleted: false,
+            };
+            addToHistory(newState);
+
+            // 勝利条件チェック（新しい位置で）
+            setTimeout(() => {
+              checkWinCondition(updatedPieces);
+            }, 100);
+          } else {
+            animationRef.current = requestAnimationFrame(animate);
+          }
+        };
+
+        // 既存のアニメーションをキャンセル
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+          // 前のスライド音があれば停止
+          stopSlideSound();
+        }
+
+        animationRef.current = requestAnimationFrame(animate);
       }
 
-      animationRef.current = requestAnimationFrame(animate);
-    }
-
-    setSelectedPiece(null);
-  }, [currentStage, gameState, isAnimating, checkWinCondition]);
+      setSelectedPiece(null);
+    },
+    [currentStage, gameState, checkWinCondition, playSound, stopSlideSound]
+  );
 
   // マウス操作処理
-  const handleMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!currentStage || isAnimating) return;
+  const handleMouseDown = useCallback(
+    (event: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!currentStage) return; // アニメーション中でも操作可能にする
 
-    event.preventDefault();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+      event.preventDefault();
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
 
-    const mouseX = (event.clientX - rect.left) * scaleX;
-    const mouseY = (event.clientY - rect.top) * scaleY;
+      const mouseX = (event.clientX - rect.left) * scaleX;
+      const mouseY = (event.clientY - rect.top) * scaleY;
 
-    setTouchStart({ x: mouseX, y: mouseY });
+      setTouchStart({ x: mouseX, y: mouseY });
 
-    const cellX = Math.floor(mouseX / CELL_SIZE);
-    const cellY = Math.floor(mouseY / CELL_SIZE);
+      const cellX = Math.floor(mouseX / CELL_SIZE);
+      const cellY = Math.floor(mouseY / CELL_SIZE);
 
-    // クリックされた位置の駒を探す
-    const clickedPiece = Object.entries(gameState.pieces).find(([_, [x, y]]) => {
-      return x === cellX && y === cellY;
-    });
+      // クリックされた位置の駒を探す
+      const clickedPiece = Object.entries(gameState.pieces).find(
+        ([, [x, y]]) => {
+          return x === cellX && y === cellY;
+        }
+      );
 
-    if (clickedPiece) {
-      const pieceId = parseInt(clickedPiece[0]);
-      setSelectedPiece(pieceId);
-      setDraggedPiece(pieceId);
-    } else {
-      setSelectedPiece(null);
-      setDraggedPiece(null);
-    }
-  }, [currentStage, gameState.pieces, isAnimating]);
+      if (clickedPiece) {
+        const pieceId = parseInt(clickedPiece[0]);
+        setSelectedPiece(pieceId);
+        setDraggedPiece(pieceId);
+      } else {
+        setSelectedPiece(null);
+        setDraggedPiece(null);
+      }
+    },
+    [currentStage, gameState.pieces]
+  );
 
-  const handleMouseMove = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!draggedPiece) return;
-    event.preventDefault();
-  }, [draggedPiece]);
+  const handleMouseMove = useCallback(
+    (event: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!draggedPiece) return;
+      event.preventDefault();
+    },
+    [draggedPiece]
+  );
 
-  const handleMouseUp = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!currentStage || !touchStart || !draggedPiece) {
+  const handleMouseUp = useCallback(
+    (event: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!currentStage || !touchStart || !draggedPiece) {
+        setTouchStart(null);
+        setDraggedPiece(null);
+        return;
+      }
+
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      const mouseX = (event.clientX - rect.left) * scaleX;
+      const mouseY = (event.clientY - rect.top) * scaleY;
+
+      const deltaX = mouseX - touchStart.x;
+      const deltaY = mouseY - touchStart.y;
+
+      const minDragDistance = 20;
+
+      if (
+        Math.abs(deltaX) > minDragDistance ||
+        Math.abs(deltaY) > minDragDistance
+      ) {
+        const direction =
+          Math.abs(deltaX) > Math.abs(deltaY)
+            ? deltaX > 0
+              ? "right"
+              : "left"
+            : deltaY > 0
+            ? "down"
+            : "up";
+        movePiece(draggedPiece, direction);
+      }
+
       setTouchStart(null);
       setDraggedPiece(null);
-      return;
-    }
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    const mouseX = (event.clientX - rect.left) * scaleX;
-    const mouseY = (event.clientY - rect.top) * scaleY;
-
-    const deltaX = mouseX - touchStart.x;
-    const deltaY = mouseY - touchStart.y;
-
-    const minDragDistance = 20;
-
-    if (Math.abs(deltaX) > minDragDistance || Math.abs(deltaY) > minDragDistance) {
-      const direction = Math.abs(deltaX) > Math.abs(deltaY)
-        ? (deltaX > 0 ? 'right' : 'left')
-        : (deltaY > 0 ? 'down' : 'up');
-      movePiece(draggedPiece, direction);
-    }
-
-    setTouchStart(null);
-    setDraggedPiece(null);
-  }, [currentStage, touchStart, draggedPiece, movePiece]);
+    },
+    [currentStage, touchStart, draggedPiece, movePiece]
+  );
 
   // タッチ操作処理
-  const handleTouchStart = useCallback((event: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!currentStage || isAnimating) return;
+  const handleTouchStart = useCallback(
+    (event: React.TouchEvent<HTMLCanvasElement>) => {
+      if (!currentStage) return; // アニメーション中でも操作可能にする
 
-    event.preventDefault();
-    const touch = event.touches[0];
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+      event.preventDefault();
+      event.stopPropagation();
+      // タッチ開始時にページスクロールを防ぐ
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+      const touch = event.touches[0];
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
 
-    const touchX = (touch.clientX - rect.left) * scaleX;
-    const touchY = (touch.clientY - rect.top) * scaleY;
+      const touchX = (touch.clientX - rect.left) * scaleX;
+      const touchY = (touch.clientY - rect.top) * scaleY;
 
-    setTouchStart({ x: touchX, y: touchY });
+      setTouchStart({ x: touchX, y: touchY });
 
-    const cellX = Math.floor(touchX / CELL_SIZE);
-    const cellY = Math.floor(touchY / CELL_SIZE);
+      const cellX = Math.floor(touchX / CELL_SIZE);
+      const cellY = Math.floor(touchY / CELL_SIZE);
 
-    // タッチされた位置の駒を探す
-    const touchedPiece = Object.entries(gameState.pieces).find(([_, [x, y]]) => {
-      return x === cellX && y === cellY;
-    });
+      // タッチされた位置の駒を探す
+      const touchedPiece = Object.entries(gameState.pieces).find(
+        ([, [x, y]]) => {
+          return x === cellX && y === cellY;
+        }
+      );
 
-    if (touchedPiece) {
-      const pieceId = parseInt(touchedPiece[0]);
-      setSelectedPiece(pieceId);
-      setDraggedPiece(pieceId);
-    } else {
-      setSelectedPiece(null);
-      setDraggedPiece(null);
-    }
-  }, [currentStage, gameState.pieces, isAnimating]);
+      if (touchedPiece) {
+        const pieceId = parseInt(touchedPiece[0]);
+        setSelectedPiece(pieceId);
+        setDraggedPiece(pieceId);
+      } else {
+        setSelectedPiece(null);
+        setDraggedPiece(null);
+      }
+    },
+    [currentStage, gameState.pieces]
+  );
 
-  const handleTouchMove = useCallback((event: React.TouchEvent<HTMLCanvasElement>) => {
-    event.preventDefault();
-  }, []);
+  const handleTouchMove = useCallback(
+    (event: React.TouchEvent<HTMLCanvasElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      // タッチ移動中はページスクロールを完全に防ぐ
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+    },
+    []
+  );
 
-  const handleTouchEnd = useCallback((event: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!currentStage || !touchStart || !draggedPiece) {
+  const handleTouchEnd = useCallback(
+    (event: React.TouchEvent<HTMLCanvasElement>) => {
+      if (!currentStage || !touchStart || !draggedPiece) {
+        setTouchStart(null);
+        setDraggedPiece(null);
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      // タッチ終了時にもページスクロールを防ぐ
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+      const touch = event.changedTouches[0];
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      const touchX = (touch.clientX - rect.left) * scaleX;
+      const touchY = (touch.clientY - rect.top) * scaleY;
+
+      const deltaX = touchX - touchStart.x;
+      const deltaY = touchY - touchStart.y;
+
+      const minSwipeDistance = 30;
+
+      if (
+        Math.abs(deltaX) > minSwipeDistance ||
+        Math.abs(deltaY) > minSwipeDistance
+      ) {
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          movePiece(draggedPiece, deltaX > 0 ? "right" : "left");
+        } else {
+          movePiece(draggedPiece, deltaY > 0 ? "down" : "up");
+        }
+      }
+
       setTouchStart(null);
       setDraggedPiece(null);
-      return;
-    }
-
-    event.preventDefault();
-    const touch = event.changedTouches[0];
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    const touchX = (touch.clientX - rect.left) * scaleX;
-    const touchY = (touch.clientY - rect.top) * scaleY;
-
-    const deltaX = touchX - touchStart.x;
-    const deltaY = touchY - touchStart.y;
-
-    const minSwipeDistance = 30;
-
-    if (Math.abs(deltaX) > minSwipeDistance || Math.abs(deltaY) > minSwipeDistance) {
-      if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        movePiece(draggedPiece, deltaX > 0 ? 'right' : 'left');
-      } else {
-        movePiece(draggedPiece, deltaY > 0 ? 'down' : 'up');
-      }
-    }
-
-    setTouchStart(null);
-    setDraggedPiece(null);
-  }, [currentStage, touchStart, draggedPiece, movePiece]);
+    },
+    [currentStage, touchStart, draggedPiece, movePiece]
+  );
 
   // キーボード操作
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
-      if (!selectedPiece || isAnimating) return;
+      if (!selectedPiece) return; // アニメーション中でも操作可能にする
 
       switch (event.key) {
-        case 'ArrowUp':
+        case "ArrowUp":
           event.preventDefault();
-          movePiece(selectedPiece, 'up');
+          movePiece(selectedPiece, "up");
           break;
-        case 'ArrowDown':
+        case "ArrowDown":
           event.preventDefault();
-          movePiece(selectedPiece, 'down');
+          movePiece(selectedPiece, "down");
           break;
-        case 'ArrowLeft':
+        case "ArrowLeft":
           event.preventDefault();
-          movePiece(selectedPiece, 'left');
+          movePiece(selectedPiece, "left");
           break;
-        case 'ArrowRight':
+        case "ArrowRight":
           event.preventDefault();
-          movePiece(selectedPiece, 'right');
+          movePiece(selectedPiece, "right");
           break;
-        case 'Escape':
+        case "Escape":
           setSelectedPiece(null);
           break;
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [selectedPiece, isAnimating, movePiece]);
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [selectedPiece, movePiece]);
 
   // ヒント再生システム
   useEffect(() => {
@@ -435,10 +688,13 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = ({ onReturnHome 
     }
 
     const timeout = setTimeout(() => {
-      const step = currentStage.solutionPath[hintStep];
+      const step = currentStage.solutionPath?.[hintStep];
       if (step) {
-        movePiece(step.piece, step.direction as 'up' | 'down' | 'left' | 'right');
-        setHintStep(prev => prev + 1);
+        movePiece(
+          step.piece,
+          step.direction as "up" | "down" | "left" | "right"
+        );
+        setHintStep((prev) => prev + 1);
       }
     }, 1500);
 
@@ -458,6 +714,10 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = ({ onReturnHome 
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    // 画像描画の品質を向上させる設定
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
 
     // キャンバスをクリア
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -486,13 +746,13 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = ({ onReturnHome 
       if (goalImage) {
         ctx.save();
         ctx.globalAlpha = 0.3;
-        const imageSize = CELL_SIZE * 0.8;
+        // セル全体に描画（境界線を完全に覆うため1px拡張）
         ctx.drawImage(
           goalImage,
-          x * CELL_SIZE + (CELL_SIZE - imageSize) / 2,
-          y * CELL_SIZE + (CELL_SIZE - imageSize) / 2,
-          imageSize,
-          imageSize
+          x * CELL_SIZE - 1.0,
+          y * CELL_SIZE - 1.0,
+          CELL_SIZE + 1,
+          CELL_SIZE + 1
         );
         ctx.restore();
       }
@@ -516,40 +776,30 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = ({ onReturnHome 
         renderY = fromY + (toY - fromY) * animating.progress;
       }
 
-      const pieceSize = CELL_SIZE * 0.8;
-      const centerX = renderX * CELL_SIZE + CELL_SIZE / 2;
-      const centerY = renderY * CELL_SIZE + CELL_SIZE / 2;
+      // セル全体に描画（境界線を完全に覆うため1px拡張）
+      const drawX = renderX * CELL_SIZE;
+      const drawY = renderY * CELL_SIZE;
 
       if (pieceImage) {
         ctx.drawImage(
           pieceImage,
-          centerX - pieceSize / 2,
-          centerY - pieceSize / 2,
-          pieceSize,
-          pieceSize
+          drawX - 1.0,
+          drawY - 1.0,
+          CELL_SIZE + 1,
+          CELL_SIZE + 1
         );
       } else {
         // フォールバック用の色
         const colors = ["#e53e3e", "#3182ce", "#38a169"];
         ctx.fillStyle = colors[id - 1];
-        ctx.fillRect(
-          centerX - pieceSize / 2,
-          centerY - pieceSize / 2,
-          pieceSize,
-          pieceSize
-        );
+        ctx.fillRect(drawX - 1.0, drawY - 1.0, CELL_SIZE + 1, CELL_SIZE + 1);
       }
 
       // 選択状態の表示
       if (isSelected) {
         ctx.strokeStyle = "#ffd700";
         ctx.lineWidth = 3;
-        ctx.strokeRect(
-          centerX - pieceSize / 2,
-          centerY - pieceSize / 2,
-          pieceSize,
-          pieceSize
-        );
+        ctx.strokeRect(drawX - 1.0, drawY - 1.0, CELL_SIZE + 1, CELL_SIZE + 1);
       }
     });
   }, [currentStage, gameState, selectedPiece, imagesLoaded, animatingPieces]);
@@ -563,8 +813,10 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = ({ onReturnHome 
       if (hintTimeoutRef.current) {
         clearTimeout(hintTimeoutRef.current);
       }
+      // コンポーネントアンマウント時にスライド音を停止
+      stopSlideSound();
     };
-  }, []);
+  }, [stopSlideSound]);
 
   if (isLoading) {
     return (
@@ -585,7 +837,6 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = ({ onReturnHome 
         alignItems: "center",
         width: "100%",
         minHeight: "100vh",
-        background: "#eee",
         fontFamily: "sans-serif",
         WebkitUserSelect: "none",
         userSelect: "none",
@@ -596,77 +847,146 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = ({ onReturnHome 
     >
       {/* Header */}
       <div className="puzzle-header">
-        <div className="puzzle-header-top">
+        <div className="puzzle-header-top" style={{ alignItems: "flex-start" }}>
           <div className="stage-indicator">
-            <div className="stage-icon">
+            <div
+              className="stage-icon"
+              style={{ top: "3px", position: "relative" }}
+            >
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
+                width="100%"
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <path
                   d="M12 2L4 6V12L12 16L20 12V6L12 2Z"
                   fill="currentColor"
                   stroke="currentColor"
-                  strokeWidth="1.5"
+                  strokeWidth="1.0"
                 />
               </svg>
             </div>
-            <h3 className="stage-title">スライディングパズル</h3>
+            <h3 className="stage-title">SlidingPuzzle</h3>
           </div>
 
-          <div className="stage-name">#{currentStage?.id} - {currentStage?.difficulty}</div>
+          <div></div>
+          <div className="stage-name text-nowrap">
+            <span className="stars-count">{gameState.moves} moves</span>
+          </div>
+
+          <div className="stage-name">#{currentStage?.id}</div>
         </div>
 
         <div className="puzzle-header-bottom">
-          <div className="stars-container">
-            <div className="stars-icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-              </svg>
-            </div>
-            <span className="stars-count">{gameState.moves}手</span>
-          </div>
-
           <div className="buttons-container">
             <button
               className="puzzle-button hint-button"
               onClick={() => {
                 if (currentStage) {
-                  setGameState({
-                    pieces: { ...currentStage.startPositions },
+                  const resetState = {
+                    pieces: convertPositions(currentStage.startPositions),
                     moves: 0,
                     isCompleted: false,
-                  });
+                  };
+                  setGameState(resetState);
                   setSelectedPiece(null);
+                  // 履歴をリセット
+                  setGameHistory([resetState]);
+                  setCurrentHistoryIndex(0);
                 }
               }}
             >
               <div className="button-icon text-white">
                 <FontAwesomeIcon icon={faRedo} />
               </div>
-              <span>リセット</span>
+            </button>
+
+            <button
+              className={`puzzle-button ${
+                currentHistoryIndex > 0 ? "select-button" : "hint-button"
+              }`}
+              onClick={stepBackward}
+              disabled={currentHistoryIndex <= 0}
+            >
+              <div className="button-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  width="100%"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M19 12H5M12 19L5 12L12 5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+            </button>
+
+            <button
+              className={`puzzle-button ${
+                currentHistoryIndex < gameHistory.length - 1
+                  ? "select-button"
+                  : "hint-button"
+              }`}
+              onClick={stepForward}
+              disabled={currentHistoryIndex >= gameHistory.length - 1}
+            >
+              <div className="button-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  width="100%"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M5 12H19M12 5L19 12L12 19"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
             </button>
 
             {currentStage?.solutionPath && (
               <button
-                className={`puzzle-button ${showSolution ? 'hint-button' : 'select-button'}`}
+                className={`puzzle-button ${
+                  showSolution ? "hint-button" : "select-button"
+                }`}
                 onClick={() => setShowSolution(!showSolution)}
               >
                 <div className="button-icon">
                   <FontAwesomeIcon icon={faLightbulb} />
                 </div>
-                <span>ヒント</span>
               </button>
             )}
 
             <button
+              className={`puzzle-button ${
+                soundEnabled ? "select-button" : "hint-button"
+              }`}
+              onClick={() => setSoundEnabled(!soundEnabled)}
+            >
+              <div className="button-icon">
+                <FontAwesomeIcon
+                  icon={soundEnabled ? faVolumeUp : faVolumeMute}
+                />
+              </div>
+              <span>{soundEnabled ? "ON" : "OFF"}</span>
+            </button>
+
+            <button
               className="puzzle-button select-button"
-              onClick={() => setShowStageSelect(!showStageSelect)}
+              onClick={() => {
+                playSound("modal");
+                setShowStageSelect(!showStageSelect);
+              }}
             >
               <div className="button-icon">
                 <svg
@@ -683,19 +1003,20 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = ({ onReturnHome 
                   />
                 </svg>
               </div>
-              <span>ステージ</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Information Area */}
-      <div id="information" className="p-4">
+      {/* <div id="information" className="p-4">
         <p style={{ whiteSpace: "pre-wrap" }}>
           {gameState.isCompleted && "🎉 ステージクリア！ 🎉"}
-          {selectedPiece && !gameState.isCompleted && `駒${selectedPiece}が選択中 - ドラッグまたは矢印キーで移動`}
+          {selectedPiece &&
+            !gameState.isCompleted &&
+            `駒${selectedPiece}が選択中 - ドラッグまたは矢印キーで移動`}
         </p>
-      </div>
+      </div> */}
 
       {/* Game Container */}
       <div
@@ -709,10 +1030,13 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = ({ onReturnHome 
           maxWidth: "440px",
           aspectRatio: "1",
           backgroundColor: "#ddd",
-          border: "2px solid #999",
+          border: "1px solid #999",
           borderRadius: "8px",
           margin: "10px 0",
           position: "relative",
+          touchAction: "none", // ゲームエリア全体でタッチ操作制御
+          WebkitUserSelect: "none",
+          userSelect: "none",
         }}
       >
         <canvas
@@ -725,9 +1049,10 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = ({ onReturnHome 
             left: 0,
             width: "100%",
             height: "100%",
-            imageRendering: "pixelated",
+            imageRendering: "auto", // シャギー除去のためpixelatedからautoに変更
             cursor: "pointer",
             borderRadius: "6px",
+            touchAction: "none", // タッチ操作のデフォルト動作を無効化
           }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -738,60 +1063,128 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = ({ onReturnHome 
         />
       </div>
 
-        {/* ステージ選択モーダル */}
-        {showStageSelect && (
-          <div className="puzzle-modal-overlay">
-            <div className="puzzle-modal">
-              <div className="puzzle-modal-header">
-                <h3 className="puzzle-modal-title">ステージを選択</h3>
-                <button
-                  onClick={() => setShowStageSelect(false)}
-                  className="puzzle-modal-close"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="puzzle-modal-content">
-                <div className="stage-grid">
-                  {stages.map((stage) => (
-                    <button
-                      key={stage.id}
-                      onClick={() => {
-                        setCurrentStage(stage);
-                        setGameState({
-                          pieces: { ...stage.startPositions },
-                          moves: 0,
-                          isCompleted: false,
-                        });
-                        setSelectedPiece(null);
-                        setShowStageSelect(false);
-                      }}
-                      className={`stage-button ${
-                        currentStage?.id === stage.id ? 'active' : ''
-                      }`}
+      {/* ステージ選択モーダル */}
+      {showStageSelect && (
+        <div
+          id="modal"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowStageSelect(false);
+          }}
+        >
+          <div id="modal-overlay">
+            <button
+              id="close-modal"
+              className="close-button"
+              onClick={() => setShowStageSelect(false)}
+            >
+              ×
+            </button>
+            <div id="modal-content">
+              <h2 className="stage-select-title">ステージを選択</h2>
+              <div className="stage-grid-container">
+                {stages.map((stage, index) => {
+                  const isCleared = clearedStages.has(stage.id);
+                  const isCurrentStage = currentStage?.id === stage.id;
+                  const hue = (index * (360 / stages.length)) % 360;
+
+                  return (
+                    <div
+                      key={stage.id || index}
+                      className={`stage-card ${
+                        isCurrentStage ? "current-stage" : ""
+                      } ${isCleared ? "cleared" : ""}`}
+                      style={
+                        {
+                          "--stage-hue": `${hue}`,
+                        } as React.CSSProperties
+                      }
                     >
-                      <div className="stage-number">#{stage.id}</div>
-                      <div className="stage-difficulty">{stage.difficulty}</div>
-                    </button>
-                  ))}
+                      <button
+                        onClick={() => {
+                          playSound("decision");
+                          setCurrentStage(stage);
+                          const newState = {
+                            pieces: convertPositions(stage.startPositions),
+                            moves: 0,
+                            isCompleted: false,
+                          };
+                          setGameState(newState);
+                          setSelectedPiece(null);
+                          setShowStageSelect(false);
+                          // 新しいステージの履歴をリセット
+                          setGameHistory([newState]);
+                          setCurrentHistoryIndex(0);
+                        }}
+                        className="stage-button"
+                        disabled={
+                          index > 0 && !clearedStages.has(stages[index - 1]?.id)
+                        }
+                      >
+                        <div className="stage-number">{index + 1}</div>
+                        <div className="stage-details">
+                          <div className="stage-name">
+                            {stage.name || `ステージ ${index + 1}`}
+                          </div>
+                          <div className="stage-status">
+                            {isCleared && (
+                              <span className="cleared-indicator">
+                                <span className="star-icon">★★☆</span>
+                                クリア済
+                              </span>
+                            )}
+                            {isCurrentStage && (
+                              <span className="playing-indicator ml-4">
+                                <span className="playing-dot"></span>
+                                プレイ中
+                              </span>
+                            )}
+                            {!isCleared && !isCurrentStage && (
+                              <span className="locked-indicator">
+                                {index > 0 &&
+                                !clearedStages.has(stages[index - 1]?.id) ? (
+                                  <span className="lock-icon">🔒</span>
+                                ) : (
+                                  <span className="available-indicator">
+                                    プレイ可能
+                                  </span>
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="stage-select-footer">
+                <div className="legend">
+                  <div className="legend-item">
+                    <span className="legend-icon current"></span> プレイ中
+                  </div>
+                  <div className="legend-item">
+                    <span className="legend-icon cleared"></span> クリア済
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
       {/* ヒント表示 */}
       {showSolution && currentStage?.solutionPath && (
         <div className="hint-panel">
           <div className="hint-header">
-            解法ヒント: ステップ {hintStep + 1} / {currentStage.solutionPath.length}
+            解法ヒント: ステップ {hintStep + 1} /{" "}
+            {currentStage.solutionPath?.length || 0}
           </div>
           <div className="hint-controls">
             <button
               onClick={() => setIsPlayingHint(!isPlayingHint)}
               className="puzzle-button hint-button"
             >
-              {isPlayingHint ? '停止' : '再生'}
+              {isPlayingHint ? "停止" : "再生"}
             </button>
             <button
               onClick={() => {
@@ -804,57 +1197,70 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = ({ onReturnHome 
               リセット
             </button>
           </div>
-          {currentStage.solutionPath[hintStep] && (
+          {currentStage.solutionPath?.[hintStep] && (
             <div className="hint-instruction">
               駒{currentStage.solutionPath[hintStep].piece}を
-              {currentStage.solutionPath[hintStep].direction === 'up' && '上'}
-              {currentStage.solutionPath[hintStep].direction === 'down' && '下'}
-              {currentStage.solutionPath[hintStep].direction === 'left' && '左'}
-              {currentStage.solutionPath[hintStep].direction === 'right' && '右'}
+              {currentStage.solutionPath[hintStep].direction === "up" && "上"}
+              {currentStage.solutionPath[hintStep].direction === "down" && "下"}
+              {currentStage.solutionPath[hintStep].direction === "left" && "左"}
+              {currentStage.solutionPath[hintStep].direction === "right" &&
+                "右"}
               に移動
             </div>
           )}
         </div>
       )}
 
-        {/* クリア画面 */}
-        {gameState.isCompleted && (
-          <div className="puzzle-modal-overlay">
-            <div className="puzzle-success-modal">
-              <div className="success-icon">🎉</div>
-              <h2 className="success-title">STAGE CLEAR!</h2>
-              <div className="success-details">
-                <p className="stage-name">{currentStage?.name}</p>
-                <p className="moves-count">手数: {gameState.moves}</p>
-              </div>
-              <div className="success-buttons">
-                <button
-                  onClick={() => {
-                    if (currentStage) {
-                      setGameState({
-                        pieces: { ...currentStage.startPositions },
-                        moves: 0,
-                        isCompleted: false,
-                      });
-                      setSelectedPiece(null);
-                    }
-                  }}
-                  className="puzzle-button retry-button"
-                >
-                  もう一度
-                </button>
-                {stages.length > 1 && currentStage && currentStage.id < stages.length && (
+      {/* クリア画面 */}
+      {gameState.isCompleted && (
+        <div className="puzzle-modal-overlay">
+          <div className="puzzle-success-modal">
+            <div className="success-icon">🎉</div>
+            <h2 className="success-title">STAGE CLEAR!</h2>
+            <div className="success-details">
+              <p className="stage-name">{currentStage?.name}</p>
+              <p className="moves-count">手数: {gameState.moves}</p>
+            </div>
+            <div className="success-buttons">
+              <button
+                onClick={() => {
+                  if (currentStage) {
+                    const resetState = {
+                      pieces: convertPositions(currentStage.startPositions),
+                      moves: 0,
+                      isCompleted: false,
+                    };
+                    setGameState(resetState);
+                    setSelectedPiece(null);
+                    // 履歴をリセット
+                    setGameHistory([resetState]);
+                    setCurrentHistoryIndex(0);
+                  }
+                }}
+                className="puzzle-button retry-button"
+              >
+                もう一度
+              </button>
+              {stages.length > 1 &&
+                currentStage &&
+                currentStage.id < stages.length && (
                   <button
                     onClick={() => {
-                      const nextStage = stages.find(s => s.id === currentStage.id + 1);
+                      const nextStage = stages.find(
+                        (s) => s.id === currentStage.id + 1
+                      );
                       if (nextStage) {
                         setCurrentStage(nextStage);
-                        setGameState({
-                          pieces: { ...nextStage.startPositions },
+                        const newState = {
+                          pieces: convertPositions(nextStage.startPositions),
                           moves: 0,
                           isCompleted: false,
-                        });
+                        };
+                        setGameState(newState);
                         setSelectedPiece(null);
+                        // 新しいステージの履歴をリセット
+                        setGameHistory([newState]);
+                        setCurrentHistoryIndex(0);
                       }
                     }}
                     className="puzzle-button next-button"
@@ -862,39 +1268,37 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = ({ onReturnHome 
                     次のステージ
                   </button>
                 )}
-                <button
-                  onClick={() => setShowStageSelect(true)}
-                  className="puzzle-button select-button"
-                >
-                  ステージ選択
-                </button>
-              </div>
+              <button
+                onClick={() => {
+                  playSound("modal");
+                  setGameState((prev) => ({ ...prev, isCompleted: false }));
+                  setShowStageSelect(true);
+                }}
+                className="puzzle-button select-button"
+              >
+                ステージ選択
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* 操作説明 */}
-        <div className="mt-6 sm:mt-8 mx-auto max-w-2xl px-2 sm:px-0">
-          <div className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 backdrop-blur-lg border border-white/10 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xl">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                <h3 className="text-base sm:text-lg font-bold text-slate-200">GAME GUIDE</h3>
-                <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-              </div>
-              <p className="text-slate-300 leading-relaxed mb-3 sm:mb-4 text-sm sm:text-base">
-                3つの駒を目標位置まで移動させよう！<br />
-                駒をドラッグ&スワイプで氷上を滑るように移動します。
-              </p>
-              {selectedPiece && (
-                <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/30 rounded-lg sm:rounded-xl">
-                  <div className="w-5 sm:w-6 h-5 sm:h-6 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-lg flex items-center justify-center text-white text-xs sm:text-sm font-bold">
-                    {selectedPiece}
-                  </div>
-                  <span className="text-yellow-300 font-medium text-xs sm:text-sm">駒が選択中 - 矢印キーでも移動可能</span>
-                </div>
-              )}
+      {/* 操作説明 */}
+      <div className="mt-6 sm:mt-8 mx-auto max-w-2xl px-2 sm:px-0">
+        <div className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 backdrop-blur-lg border border-white/10 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xl">
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+              <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+              <h3 className="text-base sm:text-lg font-bold text-slate-200">
+                GAME GUIDE
+              </h3>
+              <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
             </div>
+            <p className="text-slate-300 leading-relaxed mb-3 sm:mb-4 text-sm sm:text-base">
+              3つの駒を目標位置まで移動させよう！
+              <br />
+              駒をドラッグ&スワイプで移動します。
+            </p>
           </div>
         </div>
       </div>
