@@ -849,7 +849,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
       <div className="puzzle-header">
         <div className="puzzle-header-top" style={{ alignItems: "flex-start" }}>
           <div className="stage-indicator">
-            <div
+            {/* <div
               className="stage-icon"
               style={{ top: "3px", position: "relative" }}
             >
@@ -866,8 +866,8 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
                   strokeWidth="1.0"
                 />
               </svg>
-            </div>
-            <h3 className="stage-title">SlidingPuzzle</h3>
+            </div> */}
+            <h3 className="stage-title">∴ The Three</h3>
           </div>
 
           <div></div>
