@@ -1144,12 +1144,6 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
                                 クリア済
                               </span>
                             )}
-                            {isCurrentStage && (
-                              <span className="playing-indicator ml-4">
-                                <span className="playing-dot"></span>
-                                プレイ中
-                              </span>
-                            )}
                             {!isCleared && !isCurrentStage && (
                               <span className="locked-indicator">
                                 {index > 0 &&
