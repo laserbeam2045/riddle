@@ -751,8 +751,8 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           goalImage,
           x * CELL_SIZE - 1.0,
           y * CELL_SIZE - 1.0,
-          CELL_SIZE + 1,
-          CELL_SIZE + 1
+          CELL_SIZE + 0,
+          CELL_SIZE + 0
         );
         ctx.restore();
       }
