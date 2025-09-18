@@ -81,6 +81,9 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   }>>([]);
   const [isProcessingMove, setIsProcessingMove] = useState(false);
 
+  // 音声初期化用
+  const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRefs = useRef<{ [key: number]: number }>({});
   const hintTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -88,6 +91,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
   const audioContext = useRef<AudioContext | null>(null);
   const currentSlideSource = useRef<AudioBufferSourceNode | null>(null);
+  const currentSlideAudio = useRef<HTMLAudioElement | null>(null);
   const lastFillSoundTime = useRef<number>(0);
   const lastCorrectSoundTime = useRef<number>(0);
 
@@ -219,99 +223,303 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
     lastCorrectSoundTime.current = 0;
   }, [currentStage]);
 
+  // デスクトップでは自動的に音声をアンロック
+  useEffect(() => {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (!isMobile) {
+      setIsAudioUnlocked(true);
+    }
+  }, []);
+
   // Web Audio API用のslide音再生関数
   const playSlideWithWebAudio = useCallback(() => {
-    if (!soundEnabled) return;
+    if (!soundEnabled || !isAudioUnlocked) return;
 
-    // 非同期処理を Promise でラップして catch する
-    (async () => {
+    // Safari対応: Web Audio APIの前にHTML5 Audioを試行
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (isSafari) {
       try {
-        // AudioContextを初期化
-        if (!audioContext.current) {
-          const AudioContextClass =
-            window.AudioContext ||
-            (window as Window & { webkitAudioContext?: typeof AudioContext })
-              .webkitAudioContext;
-          if (AudioContextClass) {
-            audioContext.current = new AudioContextClass();
-          } else {
-            throw new Error("AudioContext not supported");
-          }
-        }
-
-        // モバイルでAudioContextが suspended状態の場合は resume する
-        if (audioContext.current.state === 'suspended') {
-          await audioContext.current.resume();
-        }
-
         // 前のslide音があれば停止
-        if (currentSlideSource.current) {
-          try {
-            currentSlideSource.current.stop();
-          } catch (e) {
-            // 停止エラーを無視
-            console.error(e);
-          }
-          currentSlideSource.current = null;
+        if (currentSlideAudio.current) {
+          currentSlideAudio.current.pause();
+          currentSlideAudio.current.currentTime = 0;
+          currentSlideAudio.current = null;
         }
 
-        // slide音をフェッチしてデコード
-        const response = await fetch("/sounds/slide.mp3");
-        if (!response.ok) throw new Error("Failed to fetch audio");
+        const audio = new Audio("/sounds/slide.mp3");
+        audio.volume = 0.3;
+        audio.preload = 'auto';
 
-        const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await audioContext.current.decodeAudioData(
-          arrayBuffer
-        );
+        // 現在の音声として保存
+        currentSlideAudio.current = audio;
 
-        // AudioBufferSourceNodeを作成
-        const source = audioContext.current.createBufferSource();
-        const gainNode = audioContext.current.createGain();
-
-        source.buffer = audioBuffer;
-        gainNode.gain.value = 0.3;
-
-        // 接続
-        source.connect(gainNode);
-        gainNode.connect(audioContext.current.destination);
-
-        // 現在のソースを記録
-        currentSlideSource.current = source;
-
-        // 再生
-        source.start(0);
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            console.log("Safari HTML5 audio played successfully");
+          }).catch((error) => {
+            console.log("Safari HTML5 audio failed:", error);
+            // Safari HTML5 Audioが失敗した場合のみWeb Audio APIを試行
+            currentSlideAudio.current = null;
+            playWebAudioFallback();
+          });
+        }
+        return;
       } catch (error) {
-        console.log("Web Audio API error:", error);
-        // フォールバック: 通常のAudio（モバイル対応改善）
-        try {
-          const audio = new Audio("/sounds/slide.mp3");
-          audio.volume = 0.3;
-          // モバイルでの音声再生を強制的に試行
-          const playPromise = audio.play();
-          if (playPromise !== undefined) {
-            playPromise.catch((e) => {
-              console.log("Fallback audio play prevented:", e);
-              // さらなるフォールバック: 短い遅延後に再試行
-              setTimeout(() => {
-                audio.play().catch((retryError) => {
-                  console.log("Retry audio error:", retryError);
-                });
-              }, 50);
-            });
-          }
-        } catch (fallbackError) {
-          console.log("Complete audio fallback failed:", fallbackError);
-        }
+        console.log("Safari HTML5 audio error:", error);
+        currentSlideAudio.current = null;
+        // エラー時はWeb Audio APIにフォールバック
+        playWebAudioFallback();
+        return;
       }
-    })().catch((error) => {
-      console.log("Async audio error:", error);
-    });
-  }, [soundEnabled]);
+    }
+
+    // 通常のWeb Audio API処理
+    playWebAudioFallback();
+
+    function playWebAudioFallback() {
+      // 非同期処理を Promise でラップして catch する
+      (async () => {
+        try {
+          // AudioContextを初期化
+          if (!audioContext.current || audioContext.current.state === 'closed') {
+            try {
+              const AudioContextClass =
+                window.AudioContext ||
+                (window as Window & { webkitAudioContext?: typeof AudioContext })
+                  .webkitAudioContext;
+              if (AudioContextClass) {
+                audioContext.current = new AudioContextClass();
+              } else {
+                throw new Error("AudioContext not supported");
+              }
+            } catch (initError) {
+              console.log("AudioContext initialization failed:", initError);
+              throw initError;
+            }
+          }
+
+          // AudioContextの状態をチェック
+          if (audioContext.current.state === 'suspended') {
+            try {
+              await audioContext.current.resume();
+            } catch (resumeError) {
+              console.log("AudioContext resume failed:", resumeError);
+              // resume失敗時はAudioContextを再作成
+              try {
+                audioContext.current.close();
+              } catch (closeError) {
+                console.log("AudioContext close failed:", closeError);
+              }
+              audioContext.current = null;
+              throw resumeError;
+            }
+          }
+
+          // AudioContextが使用不可能な状態の場合
+          if (audioContext.current.state === 'closed' || !audioContext.current.destination) {
+            throw new Error("AudioContext is in invalid state");
+          }
+
+          // 前のslide音があれば停止
+          if (currentSlideSource.current) {
+            try {
+              currentSlideSource.current.stop();
+            } catch (e) {
+              // 停止エラーを無視
+              console.error(e);
+            }
+            currentSlideSource.current = null;
+          }
+
+          // slide音をフェッチしてデコード
+          const response = await fetch("/sounds/slide.mp3");
+          if (!response.ok) throw new Error("Failed to fetch audio");
+
+          const arrayBuffer = await response.arrayBuffer();
+          const audioBuffer = await audioContext.current.decodeAudioData(
+            arrayBuffer
+          );
+
+          // AudioBufferSourceNodeを作成
+          const source = audioContext.current.createBufferSource();
+          const gainNode = audioContext.current.createGain();
+
+          source.buffer = audioBuffer;
+          gainNode.gain.value = 0.3;
+
+          // 接続
+          source.connect(gainNode);
+          gainNode.connect(audioContext.current.destination);
+
+          // 現在のソースを記録
+          currentSlideSource.current = source;
+
+          // 再生
+          source.start(0);
+        } catch (error) {
+          console.log("Web Audio API error:", error);
+
+          // Web Audio APIが完全に失敗した場合、AudioContextをリセット
+          if (audioContext.current) {
+            try {
+              audioContext.current.close();
+            } catch (closeError) {
+              console.log("AudioContext close error:", closeError);
+            }
+            audioContext.current = null;
+          }
+
+          // フォールバック: 通常のAudio（モバイル対応改善）
+          try {
+            // 前のHTML5 Audioがあれば停止
+            if (currentSlideAudio.current) {
+              currentSlideAudio.current.pause();
+              currentSlideAudio.current.currentTime = 0;
+              currentSlideAudio.current = null;
+            }
+
+            const audio = new Audio("/sounds/slide.mp3");
+            audio.volume = 0.3;
+
+            // プリロードを追加してモバイルでの再生を改善
+            audio.preload = 'auto';
+
+            // 現在の音声として保存
+            currentSlideAudio.current = audio;
+
+            // モバイルでの音声再生を強制的に試行
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+              playPromise.then(() => {
+                console.log("Fallback audio played successfully");
+              }).catch((playError) => {
+                console.log("Fallback audio play prevented:", playError);
+
+                // ユーザーインタラクションの後に再試行
+                const retryAudio = () => {
+                  audio.play().catch((retryError) => {
+                    console.log("Retry audio error:", retryError);
+                  });
+                };
+
+                // 短い遅延後に再試行
+                setTimeout(retryAudio, 100);
+              });
+            }
+          } catch (fallbackError) {
+            console.log("Complete audio fallback failed:", fallbackError);
+          }
+        }
+      })().catch((error) => {
+        console.log("Async audio error:", error);
+      });
+    }
+  }, [soundEnabled, isAudioUnlocked]);
+
+  // 音声アンロック関数（Touch to start用）
+  const unlockAudio = useCallback(() => {
+    if (!audioContext.current || audioContext.current.state === 'closed') {
+      try {
+        const AudioContextClass =
+          window.AudioContext ||
+          (window as Window & { webkitAudioContext?: typeof AudioContext })
+            .webkitAudioContext;
+        if (AudioContextClass) {
+          audioContext.current = new AudioContextClass();
+        } else {
+          console.error("Web Audio API is not supported in this browser.");
+          setIsAudioUnlocked(true); // フォールバックとして有効にする
+          return;
+        }
+      } catch (error) {
+        console.error("AudioContext initialization failed:", error);
+        setIsAudioUnlocked(true); // フォールバックとして有効にする
+        return;
+      }
+    }
+
+    if (audioContext.current) {
+      if (audioContext.current.state === "suspended") {
+        audioContext.current
+          .resume()
+          .then(() => {
+            console.log("AudioContext resumed successfully!");
+
+            // Safari対応: テスト音を再生してAudioContextを確実にアクティブ化
+            try {
+              const testOsc = audioContext.current!.createOscillator();
+              const testGain = audioContext.current!.createGain();
+              testOsc.connect(testGain);
+              testGain.connect(audioContext.current!.destination);
+              testGain.gain.value = 0; // 無音
+              testOsc.frequency.value = 440;
+              testOsc.start();
+              testOsc.stop(audioContext.current!.currentTime + 0.1);
+              console.log("Test sound played for Safari compatibility");
+            } catch (testError) {
+              console.log("Test sound failed:", testError);
+            }
+
+            setIsAudioUnlocked(true);
+          })
+          .catch((e) => {
+            console.error("Error resuming AudioContext:", e);
+            setIsAudioUnlocked(true); // エラーでもフォールバックとして有効にする
+          });
+      } else if (audioContext.current.state === "running") {
+        console.log("AudioContext already running.");
+
+        // Safari対応: 既に実行中でもテスト音を再生
+        try {
+          const testOsc = audioContext.current.createOscillator();
+          const testGain = audioContext.current.createGain();
+          testOsc.connect(testGain);
+          testGain.connect(audioContext.current.destination);
+          testGain.gain.value = 0; // 無音
+          testOsc.frequency.value = 440;
+          testOsc.start();
+          testOsc.stop(audioContext.current.currentTime + 0.1);
+          console.log("Test sound played for Safari compatibility");
+        } catch (testError) {
+          console.log("Test sound failed:", testError);
+        }
+
+        setIsAudioUnlocked(true);
+      }
+    }
+  }, []);
+
+  // Touch to startハンドラー
+  const handleForceClicker = useCallback(() => {
+    unlockAudio();
+
+    // Safari対応: HTML5 Audioでもテスト音を再生
+    setTimeout(() => {
+      try {
+        const testAudio = new Audio("/sounds/decision.mp3");
+        testAudio.volume = 0.1;
+        testAudio.play().then(() => {
+          console.log("Safari test HTML5 audio played");
+        }).catch((error) => {
+          console.log("Safari test HTML5 audio failed:", error);
+        });
+      } catch (error) {
+        console.log("Safari test HTML5 audio error:", error);
+      }
+    }, 100);
+  }, [unlockAudio]);
 
   // 音声再生関数
   const playSound = useCallback(
     (soundKey: string) => {
       if (!soundEnabled) return;
+
+      // 音声がアンロックされていない場合はアンロックを試行
+      if (!isAudioUnlocked) {
+        unlockAudio();
+        return;
+      }
 
       if (soundKey === "slide") {
         playSlideWithWebAudio();
@@ -349,6 +557,14 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
         try {
           const audio = new Audio(src);
           audio.volume = 0.3;
+
+          // Safari対応: プリロードを確実にする
+          const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+          if (isSafari) {
+            audio.preload = 'auto';
+            audio.load(); // Safari向けに明示的にロード
+          }
+
           // モバイル対応: Promise ベースの再生処理
           const playPromise = audio.play();
           if (playPromise !== undefined) {
@@ -367,17 +583,29 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
         }
       }
     },
-    [soundEnabled, playSlideWithWebAudio]
+    [soundEnabled, isAudioUnlocked, playSlideWithWebAudio, unlockAudio]
   );
 
   // スライド音停止関数
   const stopSlideSound = useCallback(() => {
+    // Web Audio API用の停止
     if (currentSlideSource.current) {
       try {
         currentSlideSource.current.stop();
         currentSlideSource.current = null;
       } catch (error) {
         console.log("Stop slide sound error:", error);
+      }
+    }
+
+    // HTML5 Audio用の停止（Safari対応）
+    if (currentSlideAudio.current) {
+      try {
+        currentSlideAudio.current.pause();
+        currentSlideAudio.current.currentTime = 0;
+        currentSlideAudio.current = null;
+      } catch (error) {
+        console.log("Stop HTML5 audio error:", error);
       }
     }
   }, []);
@@ -785,23 +1013,38 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
       }
 
       // モバイルでのAudioContext初期化をタッチ時に行う
-      if (soundEnabled && !audioContext.current) {
+      if (soundEnabled && (!audioContext.current || audioContext.current.state === 'closed')) {
         try {
           const AudioContextClass =
             window.AudioContext ||
             (window as Window & { webkitAudioContext?: typeof AudioContext })
               .webkitAudioContext;
           if (AudioContextClass) {
+            // 既存のAudioContextをクリーンアップ
+            if (audioContext.current && audioContext.current.state !== 'closed') {
+              try {
+                audioContext.current.close();
+              } catch (closeError) {
+                console.log("AudioContext close error:", closeError);
+              }
+            }
+
             audioContext.current = new AudioContextClass();
+
             // suspended状態の場合は即座にresume
             if (audioContext.current.state === 'suspended') {
-              audioContext.current.resume().catch((e) => {
-                console.log("AudioContext resume error:", e);
+              audioContext.current.resume().then(() => {
+                console.log("AudioContext resumed successfully on touch");
+              }).catch((resumeError) => {
+                console.log("AudioContext resume error:", resumeError);
+                // resume失敗時はAudioContextをnullにしてフォールバックを使用
+                audioContext.current = null;
               });
             }
           }
         } catch (error) {
           console.log("AudioContext initialization error:", error);
+          audioContext.current = null;
         }
       }
 
@@ -1691,6 +1934,13 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           </div>
         </div>
       </div>
+
+      {/* Touch to start modal for audio unlock */}
+      {!isAudioUnlocked && (
+        <div id="force-clicker" onClick={handleForceClicker}>
+          <p>Touch to start.</p>
+        </div>
+      )}
     </div>
   );
 };
