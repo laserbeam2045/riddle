@@ -7,6 +7,8 @@ import {
   faVolumeMute,
 } from "@fortawesome/free-solid-svg-icons";
 
+import { useAudio } from "../composables/useAudio";
+
 interface SlidingPuzzleScreenProps {
   onReturnHome: () => void;
 }
@@ -75,23 +77,23 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   // 移動キューシステム
-  const [moveQueue, setMoveQueue] = useState<Array<{
-    pieceId: number;
-    direction: "up" | "down" | "left" | "right";
-  }>>([]);
+  const [moveQueue, setMoveQueue] = useState<
+    Array<{
+      pieceId: number;
+      direction: "up" | "down" | "left" | "right";
+    }>
+  >([]);
   const [isProcessingMove, setIsProcessingMove] = useState(false);
 
   // 音声初期化用
-  const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
+  const { loadAudio, playAudio, unlockAudio, stopAudio, isAudioUnlocked } =
+    useAudio(0.5);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRefs = useRef<{ [key: number]: number }>({});
   const hintTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pieceImagesRef = useRef<{ [key: number]: HTMLImageElement }>({});
-  const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
   const audioContext = useRef<AudioContext | null>(null);
-  const currentSlideSource = useRef<AudioBufferSourceNode | null>(null);
-  const currentSlideAudio = useRef<HTMLAudioElement | null>(null);
   const lastFillSoundTime = useRef<number>(0);
   const lastCorrectSoundTime = useRef<number>(0);
 
@@ -137,24 +139,6 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
     } catch (error) {
       console.error("Failed to save cleared stages to localStorage:", error);
     }
-  }, []);
-
-  // 音声ファイルの初期化
-  useEffect(() => {
-    const soundFiles = {
-      slide: "/sounds/slide.mp3",
-      modal: "/sounds/modal.mp3",
-      fill: "/sounds/fill.mp3",
-      decision: "/sounds/decision.mp3",
-      correct: "/sounds/correct.mp3",
-    };
-
-    Object.entries(soundFiles).forEach(([key, src]) => {
-      const audio = new Audio(src);
-      audio.volume = 0.3;
-      audio.preload = "auto";
-      audioRefs.current[key] = audio;
-    });
   }, []);
 
   // クリア済みステージの初期化
@@ -223,358 +207,17 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
     lastCorrectSoundTime.current = 0;
   }, [currentStage]);
 
-  // デスクトップでは自動的に音声をアンロック
-  useEffect(() => {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (!isMobile) {
-      setIsAudioUnlocked(true);
-    }
-  }, []);
-
-  // slide音再生関数（モバイル・Safari対応強化）
-  const playSlideWithWebAudio = useCallback(() => {
-    if (!soundEnabled || !isAudioUnlocked) return;
-
-    // モバイル・Safari判定を拡張
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-    // モバイルまたはSafariの場合は、Web Audio APIを完全にスキップしてHTML5 Audioのみ使用
-    if (isMobile || isSafari) {
-      try {
-        // 前のslide音があれば停止
-        if (currentSlideAudio.current) {
-          currentSlideAudio.current.pause();
-          currentSlideAudio.current.currentTime = 0;
-          currentSlideAudio.current = null;
-        }
-
-        const audio = new Audio("/sounds/slide.mp3");
-        audio.volume = 0.3;
-        audio.preload = 'auto';
-
-        // 現在の音声として保存
-        currentSlideAudio.current = audio;
-
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-          playPromise.then(() => {
-            console.log("Mobile/Safari HTML5 audio played successfully");
-          }).catch((error) => {
-            console.log("Mobile/Safari HTML5 audio failed:", error);
-            // モバイル/Safariでは失敗しても無理にWeb Audio APIは使わない
-            currentSlideAudio.current = null;
-          });
-        }
-        return;
-      } catch (error) {
-        console.log("Mobile/Safari HTML5 audio error:", error);
-        currentSlideAudio.current = null;
-        // モバイル/Safariではエラー時もWeb Audio APIは使わない
-        return;
-      }
-    }
-
-    // 通常のWeb Audio API処理
-    playWebAudioFallback();
-
-    function playWebAudioFallback() {
-      // 非同期処理を Promise でラップして catch する
-      (async () => {
-        try {
-          // AudioContextを初期化
-          if (!audioContext.current || audioContext.current.state === 'closed') {
-            try {
-              const AudioContextClass =
-                window.AudioContext ||
-                (window as Window & { webkitAudioContext?: typeof AudioContext })
-                  .webkitAudioContext;
-              if (AudioContextClass) {
-                audioContext.current = new AudioContextClass();
-              } else {
-                throw new Error("AudioContext not supported");
-              }
-            } catch (initError) {
-              console.log("AudioContext initialization failed:", initError);
-              throw initError;
-            }
-          }
-
-          // AudioContextの状態をチェック
-          if (audioContext.current.state === 'suspended') {
-            try {
-              await audioContext.current.resume();
-            } catch (resumeError) {
-              console.log("AudioContext resume failed:", resumeError);
-              // resume失敗時はAudioContextを再作成
-              try {
-                audioContext.current.close();
-              } catch (closeError) {
-                console.log("AudioContext close failed:", closeError);
-              }
-              audioContext.current = null;
-              throw resumeError;
-            }
-          }
-
-          // AudioContextが使用不可能な状態の場合
-          if (audioContext.current.state === 'closed' || !audioContext.current.destination) {
-            throw new Error("AudioContext is in invalid state");
-          }
-
-          // 前のslide音があれば停止
-          if (currentSlideSource.current) {
-            try {
-              currentSlideSource.current.stop();
-            } catch (e) {
-              // 停止エラーを無視
-              console.error(e);
-            }
-            currentSlideSource.current = null;
-          }
-
-          // slide音をフェッチしてデコード
-          const response = await fetch("/sounds/slide.mp3");
-          if (!response.ok) throw new Error("Failed to fetch audio");
-
-          const arrayBuffer = await response.arrayBuffer();
-          const audioBuffer = await audioContext.current.decodeAudioData(
-            arrayBuffer
-          );
-
-          // AudioBufferSourceNodeを作成
-          const source = audioContext.current.createBufferSource();
-          const gainNode = audioContext.current.createGain();
-
-          source.buffer = audioBuffer;
-          gainNode.gain.value = 0.3;
-
-          // 接続
-          source.connect(gainNode);
-          gainNode.connect(audioContext.current.destination);
-
-          // 現在のソースを記録
-          currentSlideSource.current = source;
-
-          // 再生
-          source.start(0);
-        } catch (error) {
-          console.log("Web Audio API error:", error);
-
-          // Web Audio APIが完全に失敗した場合、AudioContextをリセット
-          if (audioContext.current) {
-            try {
-              audioContext.current.close();
-            } catch (closeError) {
-              console.log("AudioContext close error:", closeError);
-            }
-            audioContext.current = null;
-          }
-
-          // フォールバック: 通常のAudio（モバイル対応改善）
-          try {
-            // 前のHTML5 Audioがあれば停止
-            if (currentSlideAudio.current) {
-              currentSlideAudio.current.pause();
-              currentSlideAudio.current.currentTime = 0;
-              currentSlideAudio.current = null;
-            }
-
-            const audio = new Audio("/sounds/slide.mp3");
-            audio.volume = 0.3;
-
-            // プリロードを追加してモバイルでの再生を改善
-            audio.preload = 'auto';
-
-            // 現在の音声として保存
-            currentSlideAudio.current = audio;
-
-            // モバイルでの音声再生を強制的に試行
-            const playPromise = audio.play();
-            if (playPromise !== undefined) {
-              playPromise.then(() => {
-                console.log("Fallback audio played successfully");
-              }).catch((playError) => {
-                console.log("Fallback audio play prevented:", playError);
-
-                // ユーザーインタラクションの後に再試行
-                const retryAudio = () => {
-                  audio.play().catch((retryError) => {
-                    console.log("Retry audio error:", retryError);
-                  });
-                };
-
-                // 短い遅延後に再試行
-                setTimeout(retryAudio, 100);
-              });
-            }
-          } catch (fallbackError) {
-            console.log("Complete audio fallback failed:", fallbackError);
-          }
-        }
-      })().catch((error) => {
-        console.log("Async audio error:", error);
-      });
-    }
-  }, [soundEnabled, isAudioUnlocked]);
-
-  // 音声アンロック関数（Touch to start用）
-  const unlockAudio = useCallback(() => {
-    // モバイル・Safari判定
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-    // モバイル/SafariではWeb Audio APIを完全にスキップ
-    if (isMobile || isSafari) {
-      console.log("Mobile/Safari detected - skipping Web Audio API");
-      setIsAudioUnlocked(true);
-      return;
-    }
-
-    // デスクトップ環境でのみWeb Audio APIを使用
-    if (!audioContext.current || audioContext.current.state === 'closed') {
-      try {
-        const AudioContextClass =
-          window.AudioContext ||
-          (window as Window & { webkitAudioContext?: typeof AudioContext })
-            .webkitAudioContext;
-        if (AudioContextClass) {
-          audioContext.current = new AudioContextClass();
-        } else {
-          console.error("Web Audio API is not supported in this browser.");
-          setIsAudioUnlocked(true); // フォールバックとして有効にする
-          return;
-        }
-      } catch (error) {
-        console.error("AudioContext initialization failed:", error);
-        setIsAudioUnlocked(true); // フォールバックとして有効にする
-        return;
-      }
-    }
-
-    if (audioContext.current) {
-      if (audioContext.current.state === "suspended") {
-        audioContext.current
-          .resume()
-          .then(() => {
-            console.log("AudioContext resumed successfully!");
-            setIsAudioUnlocked(true);
-          })
-          .catch((e) => {
-            console.error("Error resuming AudioContext:", e);
-            setIsAudioUnlocked(true); // エラーでもフォールバックとして有効にする
-          });
-      } else if (audioContext.current.state === "running") {
-        console.log("AudioContext already running.");
-        setIsAudioUnlocked(true);
-      }
-    }
-  }, []);
-
   // Touch to startハンドラー
   const handleForceClicker = useCallback(() => {
     unlockAudio();
-  }, [unlockAudio]);
 
-  // 音声再生関数
-  const playSound = useCallback(
-    (soundKey: string) => {
-      if (!soundEnabled) return;
-
-      // 音声がアンロックされていない場合はアンロックを試行
-      if (!isAudioUnlocked) {
-        unlockAudio();
-        return;
-      }
-
-      if (soundKey === "slide") {
-        playSlideWithWebAudio();
-        return;
-      }
-
-      const soundFiles = {
-        modal: "/sounds/modal.mp3",
-        fill: "/sounds/fill.mp3",
-        decision: "/sounds/decision.mp3",
-        correct: "/sounds/correct.mp3",
-        cancel: "/sounds/cancel.mp3",
-      };
-
-      const src = soundFiles[soundKey as keyof typeof soundFiles];
-      if (src) {
-        // fill音の重複再生を防ぐ
-        if (soundKey === "fill") {
-          const now = Date.now();
-          if (now - lastFillSoundTime.current < 150) {
-            return; // 150ms以内の連続再生をブロック
-          }
-          lastFillSoundTime.current = now;
-        }
-
-        // correct音の重複再生を防ぐ
-        if (soundKey === "correct") {
-          const now = Date.now();
-          if (now - lastCorrectSoundTime.current < 500) {
-            return; // 500ms以内の連続再生をブロック
-          }
-          lastCorrectSoundTime.current = now;
-        }
-
-        try {
-          const audio = new Audio(src);
-          audio.volume = 0.3;
-
-          // Safari対応: プリロードを確実にする
-          const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-          if (isSafari) {
-            audio.preload = 'auto';
-            audio.load(); // Safari向けに明示的にロード
-          }
-
-          // モバイル対応: Promise ベースの再生処理
-          const playPromise = audio.play();
-          if (playPromise !== undefined) {
-            playPromise.catch((e) => {
-              console.log("Audio play prevented:", e);
-              // モバイルでのリトライ機能
-              setTimeout(() => {
-                audio.play().catch((retryError) => {
-                  console.log("Audio retry failed:", retryError);
-                });
-              }, 100);
-            });
-          }
-        } catch (error) {
-          console.log("Audio play error:", error);
-        }
-      }
-    },
-    [soundEnabled, isAudioUnlocked, playSlideWithWebAudio, unlockAudio]
-  );
-
-  // スライド音停止関数
-  const stopSlideSound = useCallback(() => {
-    // Web Audio API用の停止
-    if (currentSlideSource.current) {
-      try {
-        currentSlideSource.current.stop();
-        currentSlideSource.current = null;
-      } catch (error) {
-        console.log("Stop slide sound error:", error);
-      }
-    }
-
-    // HTML5 Audio用の停止（Safari対応）
-    if (currentSlideAudio.current) {
-      try {
-        currentSlideAudio.current.pause();
-        currentSlideAudio.current.currentTime = 0;
-        currentSlideAudio.current = null;
-      } catch (error) {
-        console.log("Stop HTML5 audio error:", error);
-      }
-    }
-  }, []);
+    loadAudio("slide");
+    loadAudio("modal");
+    loadAudio("fill");
+    loadAudio("phone");
+    loadAudio("decision");
+    loadAudio("clear");
+  }, [loadAudio, unlockAudio]);
 
   // 勝利条件チェック
   const checkWinCondition = useCallback(
@@ -616,13 +259,14 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           });
         }
         // ステージクリア音を再生
-        playSound("correct");
+        playAudio("clear");
       }
     },
     [
       currentStage,
       gameState.pieces,
-      playSound,
+      gameState.isCompleted,
+      playAudio,
       saveClearedStages,
       isPlayingHint,
     ]
@@ -649,24 +293,24 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   // 一手戻る
   const stepBackward = useCallback(() => {
     if (currentHistoryIndex > 0) {
-      playSound("decision");
+      playAudio("decision");
       const prevState = gameHistory[currentHistoryIndex - 1];
       setGameState(prevState);
       setCurrentHistoryIndex((prev) => prev - 1);
       setSelectedPiece(null);
     }
-  }, [currentHistoryIndex, gameHistory, playSound]);
+  }, [currentHistoryIndex, gameHistory, playAudio]);
 
   // 一手進める
   const stepForward = useCallback(() => {
     if (currentHistoryIndex < gameHistory.length - 1) {
-      playSound("decision");
+      playAudio("decision");
       const nextState = gameHistory[currentHistoryIndex + 1];
       setGameState(nextState);
       setCurrentHistoryIndex((prev) => prev + 1);
       setSelectedPiece(null);
     }
-  }, [currentHistoryIndex, gameHistory, playSound]);
+  }, [currentHistoryIndex, gameHistory, playAudio]);
 
   // 内部的な駒の移動処理（実際のアニメーション実行）
   const executePieceMove = useCallback(
@@ -732,10 +376,10 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
       if (newX !== currentX || newY !== currentY) {
         // 移動処理中フラグは既にprocessNextMoveで設定済み
         // スライド音を再生
-        playSound("slide");
+        playAudio("slide");
 
         // アニメーション設定（既存のアニメーション状態を保持）
-        setAnimatingPieces(prev => ({
+        setAnimatingPieces((prev) => ({
           ...prev,
           [pieceId]: {
             from: [currentX, currentY],
@@ -756,7 +400,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           const progress = Math.min(elapsed / animationDuration, 1);
           const easedProgress = easeInOut(progress);
 
-          setAnimatingPieces(prev => ({
+          setAnimatingPieces((prev) => ({
             ...prev,
             [pieceId]: {
               from: [currentX, currentY],
@@ -767,7 +411,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
 
           if (progress >= 1) {
             // アニメーション完了（該当する駒のみ削除）
-            setAnimatingPieces(prev => {
+            setAnimatingPieces((prev) => {
               const newState = { ...prev };
               delete newState[pieceId];
               return newState;
@@ -780,7 +424,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
             // setIsAnimating(false); // 現在未使用
 
             // スライド音を停止
-            stopSlideSound();
+            stopAudio("slide");
 
             const updatedPieces: { [key: number]: [number, number] } = {
               ...gameState.pieces,
@@ -790,8 +434,10 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
             setGameState((prev) => {
               const newMoves = prev.moves + 1;
 
+              // スライド音を停止
+              stopAudio("slide");
               // 操作終了音を再生
-              playSound("fill");
+              playAudio("fill");
 
               // 履歴に追加
               const newState: GameState = {
@@ -836,8 +482,8 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
       currentStage,
       gameState,
       checkWinCondition,
-      playSound,
-      stopSlideSound,
+      playAudio,
+      stopAudio,
       animatingPieces,
       addToHistory,
     ]
@@ -849,7 +495,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
 
     setIsProcessingMove(true);
     const nextMove = moveQueue[0];
-    setMoveQueue(prev => prev.slice(1));
+    setMoveQueue((prev) => prev.slice(1));
 
     // 実際の移動を実行
     const moved = executePieceMove(nextMove.pieceId, nextMove.direction);
@@ -868,7 +514,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   // パブリックな移動関数（キューに追加）
   const movePiece = useCallback(
     (pieceId: number, direction: "up" | "down" | "left" | "right") => {
-      setMoveQueue(prev => [...prev, { pieceId, direction }]);
+      setMoveQueue((prev) => [...prev, { pieceId, direction }]);
       setSelectedPiece(null);
     },
     []
@@ -979,7 +625,10 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
       }
 
       // モバイルでのAudioContext初期化をタッチ時に行う
-      if (soundEnabled && (!audioContext.current || audioContext.current.state === 'closed')) {
+      if (
+        soundEnabled &&
+        (!audioContext.current || audioContext.current.state === "closed")
+      ) {
         try {
           const AudioContextClass =
             window.AudioContext ||
@@ -987,7 +636,10 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
               .webkitAudioContext;
           if (AudioContextClass) {
             // 既存のAudioContextをクリーンアップ
-            if (audioContext.current && audioContext.current.state !== 'closed') {
+            if (
+              audioContext.current &&
+              audioContext.current.state !== "closed"
+            ) {
               try {
                 audioContext.current.close();
               } catch (closeError) {
@@ -998,14 +650,17 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
             audioContext.current = new AudioContextClass();
 
             // suspended状態の場合は即座にresume
-            if (audioContext.current.state === 'suspended') {
-              audioContext.current.resume().then(() => {
-                console.log("AudioContext resumed successfully on touch");
-              }).catch((resumeError) => {
-                console.log("AudioContext resume error:", resumeError);
-                // resume失敗時はAudioContextをnullにしてフォールバックを使用
-                audioContext.current = null;
-              });
+            if (audioContext.current.state === "suspended") {
+              audioContext.current
+                .resume()
+                .then(() => {
+                  console.log("AudioContext resumed successfully on touch");
+                })
+                .catch((resumeError) => {
+                  console.log("AudioContext resume error:", resumeError);
+                  // resume失敗時はAudioContextをnullにしてフォールバックを使用
+                  audioContext.current = null;
+                });
             }
           }
         } catch (error) {
@@ -1297,7 +952,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   useEffect(() => {
     return () => {
       // 全ての駒のアニメーションをキャンセル
-      Object.values(animationRefs.current).forEach(animationId => {
+      Object.values(animationRefs.current).forEach((animationId) => {
         cancelAnimationFrame(animationId);
       });
       animationRefs.current = {};
@@ -1306,9 +961,9 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
         clearTimeout(hintTimeoutRef.current);
       }
       // コンポーネントアンマウント時にスライド音を停止
-      stopSlideSound();
+      stopAudio("slide");
     };
-  }, [stopSlideSound]);
+  }, [stopAudio]);
 
   if (isLoading) {
     return (
@@ -1437,7 +1092,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
             <button
               className="puzzle-button hint-button"
               onClick={() => {
-                playSound("decision");
+                playAudio("decision");
                 // 音声重複防止フラグをリセット
                 lastFillSoundTime.current = 0;
                 lastCorrectSoundTime.current = 0;
@@ -1518,7 +1173,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
                   showSolution ? "hint-button" : "select-button"
                 }`}
                 onClick={() => {
-                  playSound("decision");
+                  playAudio("decision");
                   setShowSolution(!showSolution);
                 }}
               >
@@ -1545,7 +1200,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
             <button
               className="puzzle-button select-button"
               onClick={() => {
-                playSound("modal");
+                playAudio("modal");
                 setShowStageSelect(!showStageSelect);
               }}
             >
@@ -1630,7 +1285,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           id="modal"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              playSound("cancel");
+              playAudio("cancel");
               setShowStageSelect(false);
             }
           }}
@@ -1640,7 +1295,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
               id="close-modal"
               className="close-button"
               onClick={() => {
-                playSound("cancel");
+                playAudio("cancel");
                 setShowStageSelect(false);
               }}
             >
@@ -1668,7 +1323,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
                     >
                       <button
                         onClick={() => {
-                          playSound("decision");
+                          playAudio("decision");
                           setCurrentStage(stage);
                           const newState = {
                             pieces: convertPositions(stage.startPositions),
@@ -1755,7 +1410,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           <div className="hint-controls">
             <button
               onClick={() => {
-                playSound("decision");
+                playAudio("decision");
                 if (!isPlayingHint) {
                   // 再生開始時にスタート状態に戻す
                   if (currentStage) {
@@ -1780,7 +1435,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
             </button>
             <button
               onClick={() => {
-                playSound("decision");
+                playAudio("decision");
                 // 音声重複防止フラグをリセット
                 lastFillSoundTime.current = 0;
                 lastCorrectSoundTime.current = 0;
@@ -1859,6 +1514,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
                         // 新しいステージの履歴をリセット
                         setGameHistory([newState]);
                         setCurrentHistoryIndex(0);
+                        playAudio("phone");
                       }
                     }}
                     className="puzzle-button next-button"
@@ -1868,7 +1524,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
                 )}
               <button
                 onClick={() => {
-                  playSound("modal");
+                  playAudio("modal");
                   setGameState((prev) => ({ ...prev, isCompleted: false }));
                   setShowStageSelect(true);
                 }}
