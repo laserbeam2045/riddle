@@ -74,8 +74,15 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   const [clearedStages, setClearedStages] = useState<Set<number>>(new Set());
   const [soundEnabled, setSoundEnabled] = useState(true);
 
+  // 移動キューシステム
+  const [moveQueue, setMoveQueue] = useState<Array<{
+    pieceId: number;
+    direction: "up" | "down" | "left" | "right";
+  }>>([]);
+  const [isProcessingMove, setIsProcessingMove] = useState(false);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number | null>(null);
+  const animationRefs = useRef<{ [key: number]: number }>({});
   const hintTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pieceImagesRef = useRef<{ [key: number]: HTMLImageElement }>({});
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
@@ -438,10 +445,10 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
     }
   }, [currentHistoryIndex, gameHistory, playSound]);
 
-  // 駒の移動処理
-  const movePiece = useCallback(
+  // 内部的な駒の移動処理（実際のアニメーション実行）
+  const executePieceMove = useCallback(
     (pieceId: number, direction: "up" | "down" | "left" | "right") => {
-      if (!currentStage) return; // アニメーション中でも操作可能にする
+      if (!currentStage) return false; // アニメーション中でも操作可能にする
 
       const dx = direction === "left" ? -1 : direction === "right" ? 1 : 0;
       const dy = direction === "up" ? -1 : direction === "down" ? 1 : 0;
@@ -500,7 +507,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
 
       // 位置が変わった場合のみ移動
       if (newX !== currentX || newY !== currentY) {
-        // setIsAnimating(true); // 現在未使用
+        // 移動処理中フラグは既にprocessNextMoveで設定済み
         // スライド音を再生
         playSound("slide");
 
@@ -542,6 +549,11 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
               delete newState[pieceId];
               return newState;
             });
+
+            // アニメーションrefも削除
+            if (animationRefs.current[pieceId]) {
+              delete animationRefs.current[pieceId];
+            }
             // setIsAnimating(false); // 現在未使用
 
             // スライド音を停止
@@ -573,22 +585,25 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
             setTimeout(() => {
               checkWinCondition(updatedPieces);
             }, 100);
+
+            // 移動完了後、キュー処理を継続
+            setIsProcessingMove(false);
           } else {
-            animationRef.current = requestAnimationFrame(animate);
+            animationRefs.current[pieceId] = requestAnimationFrame(animate);
           }
         };
 
-        // 既存のアニメーションをキャンセル
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-          // 前のスライド音があれば停止
-          stopSlideSound();
+        // 該当する駒の既存のアニメーションをキャンセル
+        if (animationRefs.current[pieceId]) {
+          cancelAnimationFrame(animationRefs.current[pieceId]);
+          delete animationRefs.current[pieceId];
         }
 
-        animationRef.current = requestAnimationFrame(animate);
+        animationRefs.current[pieceId] = requestAnimationFrame(animate);
+        return true; // 移動が実行された
       }
 
-      setSelectedPiece(null);
+      return false; // 移動しなかった
     },
     [
       currentStage,
@@ -599,6 +614,37 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
       animatingPieces,
       addToHistory,
     ]
+  );
+
+  // キュー処理システム
+  const processNextMove = useCallback(() => {
+    if (isProcessingMove || moveQueue.length === 0) return;
+
+    setIsProcessingMove(true);
+    const nextMove = moveQueue[0];
+    setMoveQueue(prev => prev.slice(1));
+
+    // 実際の移動を実行
+    const moved = executePieceMove(nextMove.pieceId, nextMove.direction);
+
+    // 移動しなかった場合は即座に次へ
+    if (!moved) {
+      setIsProcessingMove(false);
+    }
+  }, [isProcessingMove, moveQueue, executePieceMove]);
+
+  // キューの変化を監視して自動処理
+  useEffect(() => {
+    processNextMove();
+  }, [moveQueue, isProcessingMove, processNextMove]);
+
+  // パブリックな移動関数（キューに追加）
+  const movePiece = useCallback(
+    (pieceId: number, direction: "up" | "down" | "left" | "right") => {
+      setMoveQueue(prev => [...prev, { pieceId, direction }]);
+      setSelectedPiece(null);
+    },
+    []
   );
 
   // マウス操作処理
@@ -1008,9 +1054,12 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   // アニメーションフレームのクリーンアップ
   useEffect(() => {
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      // 全ての駒のアニメーションをキャンセル
+      Object.values(animationRefs.current).forEach(animationId => {
+        cancelAnimationFrame(animationId);
+      });
+      animationRefs.current = {};
+
       if (hintTimeoutRef.current) {
         clearTimeout(hintTimeoutRef.current);
       }
