@@ -128,21 +128,34 @@ const ClearModal: React.FC<ClearModalProps> = ({
 
             {/* 星の表示 */}
             <div className="flex justify-center mb-4">
-              {Array.from({ length: 3 }, (_, i) => (
-                <div
-                  key={i}
-                  className={`mx-1 text-2xl transform transition-all duration-500 ${
-                    moves <= (currentStage?.id || 1) * 5 + i * 3
-                      ? "text-yellow-400 animate-spin-slow"
-                      : "text-gray-400"
-                  }`}
-                  style={{
-                    animationDelay: `${i * 0.2}s`,
-                  }}
-                >
-                  ⭐
-                </div>
-              ))}
+              {Array.from({ length: 3 }, (_, i) => {
+                const optimalMoves = currentStage?.optimalMoves || 0;
+                let earnedStars = 1; // デフォルトは1つ星
+
+                if (optimalMoves > 0) {
+                  if (moves <= optimalMoves) {
+                    earnedStars = 3; // 最短手数なら3つ星
+                  } else if (moves <= optimalMoves + 2) {
+                    earnedStars = 2; // 最短手数+2以内なら2つ星
+                  }
+                }
+
+                return (
+                  <div
+                    key={i}
+                    className={`mx-1 text-2xl transform transition-all duration-500 ${
+                      i < earnedStars
+                        ? "text-yellow-400 animate-spin-slow"
+                        : "text-gray-400"
+                    }`}
+                    style={{
+                      animationDelay: `${i * 0.2}s`,
+                    }}
+                  >
+                    ⭐
+                  </div>
+                );
+              })}
             </div>
           </div>
 

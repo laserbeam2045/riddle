@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+/* eslint @typescript-eslint/no-explicit-any: off */
+
+import { useState, useEffect, useCallback } from "react";
 
 export interface GameState {
   pieces: { [key: number]: [number, number] };
@@ -18,6 +20,7 @@ export interface Stage {
   startPositions: { [key: number]: [number, number] };
   goalPositions: { [key: number]: [number, number] };
   description: string;
+  optimalMoves?: number;
   solutionPath?: any[];
   verified?: boolean;
 }

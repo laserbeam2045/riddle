@@ -34,11 +34,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   const { animatingPieces, startAnimation, queueMove, processNextMove } =
     usePuzzleAnimation();
 
-  // 音声フック
-  const { loadAudio, playAudio, stopAudio, unlockAudio, isAudioUnlocked } =
-    useAudio(0.5);
-
-  // 残りのローカルstate
+  // ローカルstate
   const [selectedPiece, setSelectedPiece] = useState<number | null>(null);
   const [showSolution, setShowSolution] = useState(false);
   const [showStageSelect, setShowStageSelect] = useState(false);
@@ -51,6 +47,31 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   const [draggedPiece, setDraggedPiece] = useState<number | null>(null);
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // 音声フック
+  const {
+    loadAudio,
+    playAudio,
+    stopAudio,
+    playAudioSafe,
+    unlockAudio,
+    isAudioUnlocked,
+  } = useAudio(0.03);
+
+  // 音声再生ヘルパー関数
+  const playGameAudio = (fileName: string, volume?: number) => {
+    if (soundEnabled) {
+      playAudio(fileName, volume);
+    }
+  };
+
+  // Jupiter再生ヘルパー関数（停止→再生）
+  const playJupiterSafe = useCallback(() => {
+    if (soundEnabled) {
+      // stopAudio("Jupiter");
+      playAudioSafe("Jupiter", 0.002);
+    }
+  }, [soundEnabled, playAudioSafe]);
 
   // refs
   const hintTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -95,44 +116,48 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   // （ステージデータロードはusePuzzleGameフック内で実行済み）
 
   // Touch to startハンドラー
-  const handleForceClicker = useCallback(() => {
-    unlockAudio();
+  const handleForceClicker = useCallback(async () => {
+    await unlockAudio();
 
-    loadAudio("slide");
-    loadAudio("modal");
-    loadAudio("fill");
-    loadAudio("phone");
-    loadAudio("decision");
-    loadAudio("success");
-  }, [loadAudio, unlockAudio]);
+    await loadAudio("slide");
+    await loadAudio("modal");
+    await loadAudio("fill");
+    await loadAudio("phone");
+    await loadAudio("decision");
+    await loadAudio("success");
+    await loadAudio("Jupiter");
+
+    // TouchToStart時にJupiterを再生
+    playJupiterSafe();
+  }, [loadAudio, unlockAudio, playJupiterSafe]);
 
   // 勝利条件チェック（拡張版）
   const handleWinCondition = useCallback(
     (newPieces?: { [key: number]: [number, number] }) => {
       const isWin = checkWinCondition(newPieces, isPlayingHint);
-      if (isWin && soundEnabled) {
-        playAudio("success", 0.2);
+      if (isWin) {
+        playGameAudio("success", 0.02);
       }
     },
-    [checkWinCondition, isPlayingHint, playAudio, soundEnabled]
+    [checkWinCondition, isPlayingHint, playGameAudio]
   );
 
   // 拡張された操作関数
   const handleStepBackward = useCallback(() => {
     const success = stepBackward();
     if (success) {
-      if (soundEnabled) playAudio("decision");
+      playGameAudio("decision");
       setSelectedPiece(null);
     }
-  }, [stepBackward, playAudio, soundEnabled]);
+  }, [stepBackward, playGameAudio]);
 
   const handleStepForward = useCallback(() => {
     const success = stepForward();
     if (success) {
-      if (soundEnabled) playAudio("decision");
+      playGameAudio("decision");
       setSelectedPiece(null);
     }
-  }, [stepForward, playAudio, soundEnabled]);
+  }, [stepForward, playGameAudio]);
 
   // 内部的な駒の移動処理（アニメーションシステムを使用）
   const executePieceMove = useCallback(
@@ -208,7 +233,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
               finalX,
               finalY
             );
-            if (soundEnabled) playAudio("fill");
+            playGameAudio("fill");
 
             // 勝利条件チェック
             setTimeout(() => {
@@ -216,7 +241,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
             }, 100);
           },
           () => {
-            if (soundEnabled) playAudio("slide");
+            playGameAudio("slide");
           }, // アニメーション開始時
           () => stopAudio("slide") // アニメーション終了時
         );
@@ -233,9 +258,8 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
       startAnimation,
       updatePiecePosition,
       handleWinCondition,
-      playAudio,
       stopAudio,
-      soundEnabled,
+      playGameAudio,
     ]
   );
 
@@ -424,38 +448,6 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
     [currentStage, touchStart, draggedPiece, movePiece, MAZE_SIZE, CELL_SIZE]
   );
 
-  // キーボード操作
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (!selectedPiece) return;
-
-      switch (event.key) {
-        case "ArrowUp":
-          event.preventDefault();
-          movePiece(selectedPiece, "up");
-          break;
-        case "ArrowDown":
-          event.preventDefault();
-          movePiece(selectedPiece, "down");
-          break;
-        case "ArrowLeft":
-          event.preventDefault();
-          movePiece(selectedPiece, "left");
-          break;
-        case "ArrowRight":
-          event.preventDefault();
-          movePiece(selectedPiece, "right");
-          break;
-        case "Escape":
-          setSelectedPiece(null);
-          break;
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [selectedPiece, movePiece]);
-
   // ヒント再生システム
   useEffect(() => {
     if (!isPlayingHint || !currentStage?.solutionPath || isHintPaused) return;
@@ -532,7 +524,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
         soundEnabled={soundEnabled}
         hasSolutionPath={!!currentStage?.solutionPath}
         onReset={() => {
-          if (soundEnabled) playAudio("decision");
+          playGameAudio("decision");
           lastFillSoundTime.current = 0;
           lastCorrectSoundTime.current = 0;
           resetGame();
@@ -541,12 +533,18 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
         onStepBackward={handleStepBackward}
         onStepForward={handleStepForward}
         onToggleSolution={() => {
-          if (soundEnabled) playAudio("decision");
+          playGameAudio("decision");
           setShowSolution(!showSolution);
         }}
-        onToggleSound={() => setSoundEnabled(!soundEnabled)}
+        onToggleSound={() => {
+          const newSoundEnabled = !soundEnabled;
+          setSoundEnabled(newSoundEnabled);
+          if (!newSoundEnabled) {
+            stopAudio("Jupiter");
+          }
+        }}
         onShowStageSelect={() => {
-          if (soundEnabled) playAudio("modal");
+          playGameAudio("modal");
           setShowStageSelect(!showStageSelect);
         }}
       />
@@ -579,10 +577,11 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           onStageSelect={(stage) => {
             selectStage(stage);
             setSelectedPiece(null);
+            playJupiterSafe();
           }}
           onClose={() => setShowStageSelect(false)}
           onPlayAudio={(sound) => {
-            if (soundEnabled) playAudio(sound);
+            playGameAudio(sound);
           }}
         />
       )}
@@ -597,7 +596,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           <div className="hint-controls">
             <button
               onClick={() => {
-                if (soundEnabled) playAudio("decision");
+                playGameAudio("decision");
                 if (!isPlayingHint) {
                   // 再生開始時にスタート状態に戻す
                   if (currentStage) {
@@ -614,7 +613,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
             </button>
             <button
               onClick={() => {
-                if (soundEnabled) playAudio("decision");
+                playGameAudio("decision");
                 // 音声重複防止フラグをリセット
                 lastFillSoundTime.current = 0;
                 lastCorrectSoundTime.current = 0;
@@ -651,11 +650,12 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
             if (nextStage) {
               selectStage(nextStage);
               setSelectedPiece(null);
-              if (soundEnabled) playAudio("phone");
+              playGameAudio("phone");
+              playJupiterSafe();
             }
           }}
           onStageSelect={() => {
-            if (soundEnabled) playAudio("modal");
+            playGameAudio("modal");
             resetGame();
             setShowStageSelect(true);
           }}
@@ -697,7 +697,8 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
             if (prevStage) {
               selectStage(prevStage);
               setSelectedPiece(null);
-              if (soundEnabled) playAudio("phone");
+              playGameAudio("phone");
+              playJupiterSafe();
             }
           }}
           disabled={!currentStage || currentStage.id <= 1}
@@ -718,7 +719,8 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
             if (nextStage) {
               selectStage(nextStage);
               setSelectedPiece(null);
-              if (soundEnabled) playAudio("phone");
+              playGameAudio("phone");
+              playJupiterSafe();
             }
           }}
           disabled={
