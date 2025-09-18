@@ -6,11 +6,11 @@ import { usePuzzleAnimation } from "../composables/usePuzzleAnimation";
 import PuzzleHeader from "./puzzle/PuzzleHeader";
 import PuzzleCanvas from "./puzzle/PuzzleCanvas";
 import StageSelectModal from "./puzzle/StageSelectModal";
+import ClearModal from "./puzzle/ClearModal";
 
 interface SlidingPuzzleScreenProps {
   onReturnHome: () => void;
 }
-
 
 const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   // カスタムフックの使用
@@ -31,12 +31,8 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
     MAZE_SIZE,
   } = usePuzzleGame();
 
-  const {
-    animatingPieces,
-    startAnimation,
-    queueMove,
-    processNextMove,
-  } = usePuzzleAnimation();
+  const { animatingPieces, startAnimation, queueMove, processNextMove } =
+    usePuzzleAnimation();
 
   // 音声フック
   const { loadAudio, playAudio, stopAudio, unlockAudio, isAudioUnlocked } =
@@ -49,7 +45,9 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   const [hintStep, setHintStep] = useState(0);
   const [isPlayingHint, setIsPlayingHint] = useState(false);
   const [isHintPaused, setIsHintPaused] = useState(false);
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(
+    null
+  );
   const [draggedPiece, setDraggedPiece] = useState<number | null>(null);
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -105,7 +103,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
     loadAudio("fill");
     loadAudio("phone");
     loadAudio("decision");
-    loadAudio("clear");
+    loadAudio("success");
   }, [loadAudio, unlockAudio]);
 
   // 勝利条件チェック（拡張版）
@@ -113,7 +111,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
     (newPieces?: { [key: number]: [number, number] }) => {
       const isWin = checkWinCondition(newPieces, isPlayingHint);
       if (isWin && soundEnabled) {
-        playAudio("clear");
+        playAudio("success", 0.2);
       }
     },
     [checkWinCondition, isPlayingHint, playAudio, soundEnabled]
@@ -205,7 +203,11 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           newY,
           (completedPieceId, finalX, finalY) => {
             // アニメーション完了時の処理
-            const updatedPieces = updatePiecePosition(completedPieceId, finalX, finalY);
+            const updatedPieces = updatePiecePosition(
+              completedPieceId,
+              finalX,
+              finalY
+            );
             if (soundEnabled) playAudio("fill");
 
             // 勝利条件チェック
@@ -213,8 +215,10 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
               handleWinCondition(updatedPieces);
             }, 100);
           },
-          () => { if (soundEnabled) playAudio("slide"); }, // アニメーション開始時
-          () => stopAudio("slide")  // アニメーション終了時
+          () => {
+            if (soundEnabled) playAudio("slide");
+          }, // アニメーション開始時
+          () => stopAudio("slide") // アニメーション終了時
         );
         return true;
       }
@@ -577,7 +581,9 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
             setSelectedPiece(null);
           }}
           onClose={() => setShowStageSelect(false)}
-          onPlayAudio={(sound) => { if (soundEnabled) playAudio(sound); }}
+          onPlayAudio={(sound) => {
+            if (soundEnabled) playAudio(sound);
+          }}
         />
       )}
 
@@ -631,56 +637,34 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
 
       {/* クリア画面 */}
       {gameState.isCompleted && (
-        <div className="puzzle-modal-overlay">
-          <div className="puzzle-success-modal">
-            <div className="success-icon">🎉</div>
-            <h2 className="success-title">STAGE CLEAR!</h2>
-            <div className="success-details">
-              <p className="stage-name">{currentStage?.name}</p>
-              <p className="moves-count">手数: {gameState.moves}</p>
-            </div>
-            <div className="success-buttons">
-              <button
-                onClick={() => {
-                  resetGame();
-                  setSelectedPiece(null);
-                }}
-                className="puzzle-button retry-button"
-              >
-                もう一度
-              </button>
-              {stages.length > 1 &&
-                currentStage &&
-                currentStage.id < stages.length && (
-                  <button
-                    onClick={() => {
-                      const nextStage = stages.find(
-                        (s) => s.id === currentStage.id + 1
-                      );
-                      if (nextStage) {
-                        selectStage(nextStage);
-                        setSelectedPiece(null);
-                        if (soundEnabled) playAudio("phone");
-                      }
-                    }}
-                    className="puzzle-button next-button"
-                  >
-                    次のステージ
-                  </button>
-                )}
-              <button
-                onClick={() => {
-                  if (soundEnabled) playAudio("modal");
-                  resetGame();
-                  setShowStageSelect(true);
-                }}
-                className="puzzle-button select-button"
-              >
-                ステージ選択
-              </button>
-            </div>
-          </div>
-        </div>
+        <ClearModal
+          currentStage={currentStage}
+          moves={gameState.moves}
+          onRetry={() => {
+            resetGame();
+            setSelectedPiece(null);
+          }}
+          onNextStage={() => {
+            const nextStage = stages.find(
+              (s) => s.id === (currentStage?.id || 1) + 1
+            );
+            if (nextStage) {
+              selectStage(nextStage);
+              setSelectedPiece(null);
+              if (soundEnabled) playAudio("phone");
+            }
+          }}
+          onStageSelect={() => {
+            if (soundEnabled) playAudio("modal");
+            resetGame();
+            setShowStageSelect(true);
+          }}
+          hasNextStage={
+            !!currentStage &&
+            currentStage.id < stages.length &&
+            stages.some((s) => s.id === currentStage.id + 1)
+          }
+        />
       )}
 
       {/* 操作説明 */}
@@ -707,7 +691,9 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
       <div className="mt-8 mb-8 flex justify-center gap-4">
         <button
           onClick={() => {
-            const prevStage = stages.find((s) => s.id === (currentStage?.id || 1) - 1);
+            const prevStage = stages.find(
+              (s) => s.id === (currentStage?.id || 1) - 1
+            );
             if (prevStage) {
               selectStage(prevStage);
               setSelectedPiece(null);
@@ -726,16 +712,24 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
 
         <button
           onClick={() => {
-            const nextStage = stages.find((s) => s.id === (currentStage?.id || 1) + 1);
+            const nextStage = stages.find(
+              (s) => s.id === (currentStage?.id || 1) + 1
+            );
             if (nextStage) {
               selectStage(nextStage);
               setSelectedPiece(null);
               if (soundEnabled) playAudio("phone");
             }
           }}
-          disabled={!currentStage || currentStage.id >= stages.length || !clearedStages.has(currentStage.id)}
+          disabled={
+            !currentStage ||
+            currentStage.id >= stages.length ||
+            !clearedStages.has(currentStage.id)
+          }
           className={`px-6 py-3 rounded-full font-bold text-white transition-all duration-300 ${
-            !currentStage || currentStage.id >= stages.length || !clearedStages.has(currentStage.id)
+            !currentStage ||
+            currentStage.id >= stages.length ||
+            !clearedStages.has(currentStage.id)
               ? "bg-gray-600 cursor-not-allowed opacity-50"
               : "bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 hover:shadow-lg transform hover:-translate-y-1"
           }`}
