@@ -224,6 +224,11 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           }
         }
 
+        // モバイルでAudioContextが suspended状態の場合は resume する
+        if (audioContext.current.state === 'suspended') {
+          await audioContext.current.resume();
+        }
+
         // 前のslide音があれば停止
         if (currentSlideSource.current) {
           try {
@@ -262,11 +267,23 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
         source.start(0);
       } catch (error) {
         console.log("Web Audio API error:", error);
-        // フォールバック: 通常のAudio
+        // フォールバック: 通常のAudio（モバイル対応改善）
         try {
           const audio = new Audio("/sounds/slide.mp3");
           audio.volume = 0.3;
-          audio.play().catch((e) => console.log("Fallback audio error:", e));
+          // モバイルでの音声再生を強制的に試行
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((e) => {
+              console.log("Fallback audio play prevented:", e);
+              // さらなるフォールバック: 短い遅延後に再試行
+              setTimeout(() => {
+                audio.play().catch((retryError) => {
+                  console.log("Retry audio error:", retryError);
+                });
+              }, 50);
+            });
+          }
         } catch (fallbackError) {
           console.log("Complete audio fallback failed:", fallbackError);
         }
@@ -299,9 +316,19 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
         try {
           const audio = new Audio(src);
           audio.volume = 0.3;
-          audio.play().catch((e) => {
-            console.log("Audio play prevented:", e);
-          });
+          // モバイル対応: Promise ベースの再生処理
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((e) => {
+              console.log("Audio play prevented:", e);
+              // モバイルでのリトライ機能
+              setTimeout(() => {
+                audio.play().catch((retryError) => {
+                  console.log("Audio retry failed:", retryError);
+                });
+              }, 100);
+            });
+          }
         } catch (error) {
           console.log("Audio play error:", error);
         }
@@ -477,14 +504,15 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
         // スライド音を再生
         playSound("slide");
 
-        // アニメーション設定
-        setAnimatingPieces({
+        // アニメーション設定（既存のアニメーション状態を保持）
+        setAnimatingPieces(prev => ({
+          ...prev,
           [pieceId]: {
             from: [currentX, currentY],
             to: [newX, newY],
             progress: 0,
           },
-        });
+        }));
 
         // アニメーション実行
         const startTime = Date.now();
@@ -498,7 +526,8 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           const progress = Math.min(elapsed / animationDuration, 1);
           const easedProgress = easeInOut(progress);
 
-          setAnimatingPieces(() => ({
+          setAnimatingPieces(prev => ({
+            ...prev,
             [pieceId]: {
               from: [currentX, currentY],
               to: [newX, newY],
@@ -507,8 +536,12 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           }));
 
           if (progress >= 1) {
-            // アニメーション完了
-            setAnimatingPieces({});
+            // アニメーション完了（該当する駒のみ削除）
+            setAnimatingPieces(prev => {
+              const newState = { ...prev };
+              delete newState[pieceId];
+              return newState;
+            });
             // setIsAnimating(false); // 現在未使用
 
             // スライド音を停止
@@ -671,6 +704,28 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
       if (event.cancelable) {
         event.preventDefault();
       }
+
+      // モバイルでのAudioContext初期化をタッチ時に行う
+      if (soundEnabled && !audioContext.current) {
+        try {
+          const AudioContextClass =
+            window.AudioContext ||
+            (window as Window & { webkitAudioContext?: typeof AudioContext })
+              .webkitAudioContext;
+          if (AudioContextClass) {
+            audioContext.current = new AudioContextClass();
+            // suspended状態の場合は即座にresume
+            if (audioContext.current.state === 'suspended') {
+              audioContext.current.resume().catch((e) => {
+                console.log("AudioContext resume error:", e);
+              });
+            }
+          }
+        } catch (error) {
+          console.log("AudioContext initialization error:", error);
+        }
+      }
+
       const touch = event.touches[0];
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -703,7 +758,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
         setDraggedPiece(null);
       }
     },
-    [currentStage, gameState.pieces]
+    [currentStage, gameState.pieces, soundEnabled]
   );
 
   const handleTouchMove = useCallback(
