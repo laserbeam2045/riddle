@@ -79,6 +79,8 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   const hintTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pieceImagesRef = useRef<{ [key: number]: HTMLImageElement }>({});
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
+  const audioContext = useRef<AudioContext | null>(null);
+  const currentSlideSource = useRef<AudioBufferSourceNode | null>(null);
 
   const MAZE_SIZE = 11;
   const CELL_SIZE = 40;
@@ -202,17 +204,102 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
     loadStages();
   }, []);
 
+  // Web Audio API用のslide音再生関数
+  const playSlideWithWebAudio = useCallback(() => {
+    if (!soundEnabled) return;
+
+    // 非同期処理を Promise でラップして catch する
+    (async () => {
+      try {
+        // AudioContextを初期化
+        if (!audioContext.current) {
+          const AudioContextClass =
+            window.AudioContext ||
+            (window as Window & { webkitAudioContext?: typeof AudioContext })
+              .webkitAudioContext;
+          if (AudioContextClass) {
+            audioContext.current = new AudioContextClass();
+          } else {
+            throw new Error("AudioContext not supported");
+          }
+        }
+
+        // 前のslide音があれば停止
+        if (currentSlideSource.current) {
+          try {
+            currentSlideSource.current.stop();
+          } catch (e) {
+            // 停止エラーを無視
+            console.error(e);
+          }
+          currentSlideSource.current = null;
+        }
+
+        // slide音をフェッチしてデコード
+        const response = await fetch("/sounds/slide.mp3");
+        if (!response.ok) throw new Error("Failed to fetch audio");
+
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await audioContext.current.decodeAudioData(
+          arrayBuffer
+        );
+
+        // AudioBufferSourceNodeを作成
+        const source = audioContext.current.createBufferSource();
+        const gainNode = audioContext.current.createGain();
+
+        source.buffer = audioBuffer;
+        gainNode.gain.value = 0.3;
+
+        // 接続
+        source.connect(gainNode);
+        gainNode.connect(audioContext.current.destination);
+
+        // 現在のソースを記録
+        currentSlideSource.current = source;
+
+        // 再生
+        source.start(0);
+      } catch (error) {
+        console.log("Web Audio API error:", error);
+        // フォールバック: 通常のAudio
+        try {
+          const audio = new Audio("/sounds/slide.mp3");
+          audio.volume = 0.3;
+          audio.play().catch((e) => console.log("Fallback audio error:", e));
+        } catch (fallbackError) {
+          console.log("Complete audio fallback failed:", fallbackError);
+        }
+      }
+    })().catch((error) => {
+      console.log("Async audio error:", error);
+    });
+  }, [soundEnabled]);
+
   // 音声再生関数
   const playSound = useCallback(
     (soundKey: string) => {
       if (!soundEnabled) return;
 
-      const audio = audioRefs.current[soundKey];
-      if (audio) {
+      if (soundKey === "slide") {
+        playSlideWithWebAudio();
+        return;
+      }
+
+      const soundFiles = {
+        modal: "/sounds/modal.mp3",
+        fill: "/sounds/fill.mp3",
+        decision: "/sounds/decision.mp3",
+        correct: "/sounds/correct.mp3",
+        cancel: "/sounds/cancel.mp3",
+      };
+
+      const src = soundFiles[soundKey as keyof typeof soundFiles];
+      if (src) {
         try {
-          audio.currentTime = 0; // 音声を最初から再生
+          const audio = new Audio(src);
+          audio.volume = 0.3;
           audio.play().catch((e) => {
-            // ブラウザが音声再生を制限している場合のエラーを無視
             console.log("Audio play prevented:", e);
           });
         } catch (error) {
@@ -220,18 +307,17 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
         }
       }
     },
-    [soundEnabled]
+    [soundEnabled, playSlideWithWebAudio]
   );
 
   // スライド音停止関数
   const stopSlideSound = useCallback(() => {
-    const audio = audioRefs.current["slide"];
-    if (audio) {
+    if (currentSlideSource.current) {
       try {
-        audio.pause();
-        audio.currentTime = 0;
+        currentSlideSource.current.stop();
+        currentSlideSource.current = null;
       } catch (error) {
-        console.log("Audio stop error:", error);
+        console.log("Stop slide sound error:", error);
       }
     }
   }, []);
@@ -240,6 +326,9 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   const checkWinCondition = useCallback(
     (newPieces?: { [key: number]: [number, number] }) => {
       if (!currentStage) return;
+
+      // ヒント再生中はクリア判定しない
+      if (isPlayingHint) return;
 
       const piecesToCheck = newPieces || gameState.pieces;
 
@@ -273,12 +362,18 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
         playSound("correct");
       }
     },
-    [currentStage, gameState.pieces, playSound, saveClearedStages]
+    [
+      currentStage,
+      gameState.pieces,
+      playSound,
+      saveClearedStages,
+      isPlayingHint,
+    ]
   );
 
-  // EaseOut関数
-  const easeOut = (t: number): number => {
-    return 1 - Math.pow(1 - t, 4); // より強いEaseOut効果
+  // EaseInOut関数
+  const easeInOut = (t: number): number => {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   };
 
   // 履歴にゲーム状態を追加
@@ -324,7 +419,11 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
       const dx = direction === "left" ? -1 : direction === "right" ? 1 : 0;
       const dy = direction === "up" ? -1 : direction === "down" ? 1 : 0;
 
-      const [currentX, currentY] = gameState.pieces[pieceId];
+      // アニメーション中の場合は、アニメーション先の位置を開始位置として使用
+      const animating = animatingPieces[pieceId];
+      const [currentX, currentY] = animating
+        ? animating.to // アニメーション中なら目標位置から開始
+        : gameState.pieces[pieceId]; // アニメーション中でなければ現在位置から開始
       let newX = currentX;
       let newY = currentY;
 
@@ -348,10 +447,19 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           break;
         }
 
-        // 他の駒との衝突チェック
+        // 他の駒との衝突チェック（アニメーション中の位置も考慮）
         const hasCollision = Object.entries(gameState.pieces).some(
           ([id, [x, y]]) => {
-            return parseInt(id) !== pieceId && x === nextX && y === nextY;
+            const otherId = parseInt(id);
+            if (otherId === pieceId) return false;
+
+            // 他の駒がアニメーション中の場合はその目標位置をチェック
+            const otherAnimating = animatingPieces[otherId];
+            const [otherX, otherY] = otherAnimating
+              ? otherAnimating.to
+              : [x, y];
+
+            return otherX === nextX && otherY === nextY;
           }
         );
 
@@ -382,13 +490,13 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
         const startTime = Date.now();
         // 移動距離に応じてアニメーション時間を計算
         const distance = Math.abs(newX - currentX) + Math.abs(newY - currentY);
-        const baseTime = 80; // 1マスあたりの基本時間（ms）
-        const animationDuration = Math.max(baseTime * distance, 120); // 最小120ms
+        const baseTime = 100; // 1マスあたりの基本時間（ms）
+        const animationDuration = Math.max(baseTime * distance, 180);
 
         const animate = () => {
           const elapsed = Date.now() - startTime;
           const progress = Math.min(elapsed / animationDuration, 1);
-          const easedProgress = easeOut(progress);
+          const easedProgress = easeInOut(progress);
 
           setAnimatingPieces(() => ({
             [pieceId]: {
@@ -449,7 +557,15 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
 
       setSelectedPiece(null);
     },
-    [currentStage, gameState, checkWinCondition, playSound, stopSlideSound]
+    [
+      currentStage,
+      gameState,
+      checkWinCondition,
+      playSound,
+      stopSlideSound,
+      animatingPieces,
+      addToHistory,
+    ]
   );
 
   // マウス操作処理
@@ -725,18 +841,26 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
     // キャンバスをクリア
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 迷路を描画
+    // 道を描画
+    for (let y = 0; y < currentStage.maze.length; y++) {
+      for (let x = 0; x < currentStage.maze[y].length; x++) {
+        const cell = currentStage.maze[y][x];
+        if (!cell.isWall) {
+          ctx.fillStyle = "#f7fafc";
+          ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+          ctx.strokeStyle = "#e2e8f0";
+          ctx.strokeRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        }
+      }
+    }
+
+    // 壁を描画
     for (let y = 0; y < currentStage.maze.length; y++) {
       for (let x = 0; x < currentStage.maze[y].length; x++) {
         const cell = currentStage.maze[y][x];
         if (cell.isWall) {
           ctx.fillStyle = "#2d3748";
           ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-        } else {
-          ctx.fillStyle = "#f7fafc";
-          ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-          ctx.strokeStyle = "#e2e8f0";
-          ctx.strokeRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
         }
       }
     }
@@ -752,8 +876,8 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
         // セル全体に描画（境界線を完全に覆うため1px拡張）
         ctx.drawImage(
           goalImage,
-          x * CELL_SIZE - 1.0,
-          y * CELL_SIZE - 1.0,
+          x * CELL_SIZE - 0.0,
+          y * CELL_SIZE - 0.0,
           CELL_SIZE + 0,
           CELL_SIZE + 0
         );
@@ -779,15 +903,29 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
         renderY = fromY + (toY - fromY) * animating.progress;
       }
 
+      // ゴール位置にいるかチェック
+      const goalPosition = currentStage.goalPositions[id];
+      const isAtGoal =
+        goalPosition && goalPosition[0] === x && goalPosition[1] === y;
+
       // セル全体に描画（境界線を完全に覆うため1px拡張）
       const drawX = renderX * CELL_SIZE;
       const drawY = renderY * CELL_SIZE;
 
+      // ゴール位置にある駒に発光エフェクトを追加
+      if (isAtGoal) {
+        ctx.save();
+        ctx.shadowColor = "#10b981"; // より緑色っぽいエメラルドグリーン
+        ctx.shadowBlur = 12; // 控え目にブラー値を下げる
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+      }
+
       if (pieceImage) {
         ctx.drawImage(
           pieceImage,
-          drawX - 1.0,
-          drawY - 1.0,
+          drawX - 0.0,
+          drawY - 0.0,
           CELL_SIZE + 0,
           CELL_SIZE + 0
         );
@@ -795,14 +933,19 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
         // フォールバック用の色
         const colors = ["#e53e3e", "#3182ce", "#38a169"];
         ctx.fillStyle = colors[id - 1];
-        ctx.fillRect(drawX - 1.0, drawY - 1.0, CELL_SIZE + 1, CELL_SIZE + 1);
+        ctx.fillRect(drawX - 0.0, drawY - 0.0, CELL_SIZE + 1, CELL_SIZE + 1);
+      }
+
+      // ゴール位置エフェクトのリストア
+      if (isAtGoal) {
+        ctx.restore();
       }
 
       // 選択状態の表示
       if (isSelected) {
         ctx.strokeStyle = "#ffd700";
         ctx.lineWidth = 3;
-        ctx.strokeRect(drawX - 1.0, drawY - 1.0, CELL_SIZE + 1, CELL_SIZE + 1);
+        ctx.strokeRect(drawX - 0.0, drawY - 0.0, CELL_SIZE + 1, CELL_SIZE + 1);
       }
     });
   }, [currentStage, gameState, selectedPiece, imagesLoaded, animatingPieces]);
@@ -850,35 +993,97 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
     >
       {/* Header */}
       <div className="puzzle-header">
-        <div className="puzzle-header-top" style={{ alignItems: "flex-start" }}>
-          <div className="stage-indicator">
-            {/* <div
-              className="stage-icon"
-              style={{ top: "3px", position: "relative" }}
+        <div
+          className="puzzle-header-top"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
+          {/* Left: Title */}
+          <div
+            className="stage-indicator"
+            style={{ display: "flex", alignItems: "center", gap: "12px" }}
+          >
+            <div
+              style={{
+                width: "40px",
+                height: "40px",
+                backgroundColor: "rgba(30, 30, 30, 0.8)",
+                border: "1px solid rgba(64, 64, 64, 0.6)",
+                borderRadius: "8px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow:
+                  "inset 0 1px 0 rgba(255,255,255,0.1), 0 1px 3px rgba(0,0,0,0.3)",
+              }}
             >
               <svg
+                width="32"
+                height="32"
                 viewBox="0 0 24 24"
                 fill="none"
-                width="100%"
                 xmlns="http://www.w3.org/2000/svg"
               >
-                <path
-                  d="M12 2L4 6V12L12 16L20 12V6L12 2Z"
-                  fill="currentColor"
-                  stroke="currentColor"
-                  strokeWidth="1.0"
+                {/* 正三角形の辺（グラフエッジ） */}
+                <line
+                  x1="12"
+                  y1="5"
+                  x2="5"
+                  y2="17"
+                  stroke="#6b7280"
+                  strokeWidth="2"
                 />
+                <line
+                  x1="5"
+                  y1="17"
+                  x2="19"
+                  y2="17"
+                  stroke="#6b7280"
+                  strokeWidth="2"
+                />
+                <line
+                  x1="19"
+                  y1="17"
+                  x2="12"
+                  y2="5"
+                  stroke="#6b7280"
+                  strokeWidth="2"
+                />
+
+                {/* 頂点（ノード） */}
+                <circle cx="12" cy="5" r="2.5" fill="#ffffff" />
+                <circle cx="5" cy="17" r="2.5" fill="#ffffff" />
+                <circle cx="19" cy="17" r="2.5" fill="#ffffff" />
               </svg>
-            </div> */}
-            <h3 className="stage-title">∴ The Three</h3>
+            </div>
+            <div>
+              <h3
+                className="stage-title"
+                style={{
+                  fontSize: "20px",
+                  fontWeight: "600",
+                  color: "#1f2937",
+                  margin: 0,
+                  letterSpacing: "0.3px",
+                  textShadow: "2px 2px 4px rgba(0, 0, 0, 0.3)",
+                }}
+              >
+                The Three
+              </h3>
+            </div>
           </div>
 
-          <div></div>
-          <div className="stage-name text-nowrap">
-            <span className="stars-count">{gameState.moves} moves</span>
+          {/* Right: Stats */}
+          <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+            <div className="stage-name text-nowrap">
+              <span className="stars-count">{gameState.moves} moves</span>
+            </div>
+            <div className="stage-name">#{currentStage?.id}</div>
           </div>
-
-          <div className="stage-name">#{currentStage?.id}</div>
         </div>
 
         <div className="puzzle-header-bottom">
@@ -886,6 +1091,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
             <button
               className="puzzle-button hint-button"
               onClick={() => {
+                playSound("decision");
                 if (currentStage) {
                   const resetState = {
                     pieces: convertPositions(currentStage.startPositions),
@@ -962,7 +1168,10 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
                 className={`puzzle-button ${
                   showSolution ? "hint-button" : "select-button"
                 }`}
-                onClick={() => setShowSolution(!showSolution)}
+                onClick={() => {
+                  playSound("decision");
+                  setShowSolution(!showSolution);
+                }}
               >
                 <div className="button-icon">
                   <FontAwesomeIcon icon={faLightbulb} />
@@ -1071,14 +1280,20 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
         <div
           id="modal"
           onClick={(e) => {
-            if (e.target === e.currentTarget) setShowStageSelect(false);
+            if (e.target === e.currentTarget) {
+              playSound("cancel");
+              setShowStageSelect(false);
+            }
           }}
         >
           <div id="modal-overlay">
             <button
               id="close-modal"
               className="close-button"
-              onClick={() => setShowStageSelect(false)}
+              onClick={() => {
+                playSound("cancel");
+                setShowStageSelect(false);
+              }}
             >
               ×
             </button>
@@ -1185,12 +1400,13 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
       {showSolution && currentStage?.solutionPath && (
         <div className="hint-panel">
           <div className="hint-header">
-            解法ヒント: ステップ {hintStep + 1} /{" "}
+            解法ヒント: ステップ {hintStep} /{" "}
             {currentStage.solutionPath?.length || 0}
           </div>
           <div className="hint-controls">
             <button
               onClick={() => {
+                playSound("decision");
                 if (!isPlayingHint) {
                   // 再生開始時にスタート状態に戻す
                   if (currentStage) {
@@ -1215,6 +1431,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
             </button>
             <button
               onClick={() => {
+                playSound("decision");
                 // リセット時にスタート状態に戻す
                 if (currentStage) {
                   const resetState = {
@@ -1237,17 +1454,6 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
               リセット
             </button>
           </div>
-          {currentStage.solutionPath?.[hintStep] && (
-            <div className="hint-instruction">
-              駒{currentStage.solutionPath[hintStep].piece}を
-              {currentStage.solutionPath[hintStep].direction === "up" && "上"}
-              {currentStage.solutionPath[hintStep].direction === "down" && "下"}
-              {currentStage.solutionPath[hintStep].direction === "left" && "左"}
-              {currentStage.solutionPath[hintStep].direction === "right" &&
-                "右"}
-              に移動
-            </div>
-          )}
         </div>
       )}
 
@@ -1335,9 +1541,9 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
               <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
             </div>
             <p className="text-slate-300 leading-relaxed mb-3 sm:mb-4 text-sm sm:text-base">
-              3つの駒を目標位置まで移動させよう！
+              3つの天体を目標位置まで移動させよう！
               <br />
-              駒をドラッグ&スワイプで移動します。
+              天体をドラッグ&スワイプで移動します。
             </p>
           </div>
         </div>
