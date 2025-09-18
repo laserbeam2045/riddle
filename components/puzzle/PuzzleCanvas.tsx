@@ -62,7 +62,8 @@ const PuzzleCanvas: React.FC<PuzzleCanvasProps> = ({
       for (let x = 0; x < maze[y].length; x++) {
         const cell = maze[y][x];
         if (!cell.isWall) {
-          ctx.fillStyle = "#f7fafc";
+          // ctx.fillStyle = "#f7fafc";
+          ctx.fillStyle = "#ffffff";
           ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
           ctx.strokeStyle = "#e2e8f0";
           ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
