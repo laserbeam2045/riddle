@@ -100,7 +100,7 @@ export const useAudio = (defaultVolume: number = 1.0): AudioHook => {
   // AudioContextの初期化とアンロック
   const unlockAudio = useCallback(() => {
     if (!audioContextRef.current) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const AudioContext = window.AudioContext; //  || window.webkitAudioContext;
       if (AudioContext) {
         audioContextRef.current = new AudioContext();
       } else {
