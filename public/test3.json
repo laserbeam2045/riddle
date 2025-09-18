@@ -1,0 +1,3916 @@
+{
+  "problems": [
+    {
+      "id": "aFZwjno4",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 54,
+      "pathCount": 24,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              2,
+              0
+            ],
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              4,
+              1
+            ],
+            [
+              0,
+              6
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              1,
+              7
+            ],
+            [
+              4,
+              0
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              1,
+              2
+            ],
+            [
+              6,
+              2
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "SohZOajK",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 54,
+      "pathCount": 5,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              0,
+              3
+            ],
+            [
+              5,
+              4
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              0,
+              2
+            ],
+            [
+              3,
+              4
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              1,
+              5
+            ],
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              3,
+              1
+            ],
+            [
+              1,
+              6
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "TXlm0HG3",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 59,
+      "pathCount": 1,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              3,
+              0
+            ],
+            [
+              0,
+              5
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              0,
+              2
+            ],
+            [
+              3,
+              1
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              0,
+              0
+            ],
+            [
+              4,
+              2
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              1,
+              0
+            ],
+            [
+              4,
+              4
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "0DL4ixAm",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 47,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              7,
+              1
+            ],
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              4,
+              1
+            ],
+            [
+              6,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              6,
+              0
+            ],
+            [
+              2,
+              5
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              4,
+              5
+            ],
+            [
+              5,
+              1
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          7,
+          0
+        ],
+        [
+          6,
+          4
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          7,
+          6
+        ],
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "KDkdv9Nt",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 298,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              1,
+              1
+            ],
+            [
+              2,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              5,
+              3
+            ],
+            [
+              1,
+              6
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              1,
+              7
+            ],
+            [
+              5,
+              2
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              3,
+              6
+            ],
+            [
+              1,
+              3
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "id": "jsN6YnPV",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 53,
+      "pathCount": 10,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              3,
+              3
+            ],
+            [
+              5,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              4,
+              6
+            ],
+            [
+              5,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              0,
+              4
+            ],
+            [
+              6,
+              5
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              4,
+              3
+            ],
+            [
+              4,
+              7
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          5
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          7,
+          6
+        ],
+        [
+          0,
+          7
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "KkUX7V0C",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 55,
+      "pathCount": 43,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              4,
+              3
+            ],
+            [
+              0,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              5,
+              4
+            ],
+            [
+              0,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              1,
+              3
+            ],
+            [
+              1,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              2,
+              7
+            ],
+            [
+              0,
+              0
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "nYXBTo3H",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 3664,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              6,
+              4
+            ],
+            [
+              6,
+              0
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              7,
+              4
+            ],
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              2,
+              5
+            ],
+            [
+              6,
+              2
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              7,
+              3
+            ],
+            [
+              2,
+              4
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          6,
+          3
+        ]
+      ]
+    },
+    {
+      "id": "9dNI8k39",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 57,
+      "pathCount": 1,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              1,
+              3
+            ],
+            [
+              1,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              1,
+              6
+            ],
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              0,
+              6
+            ],
+            [
+              4,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              0,
+              2
+            ],
+            [
+              3,
+              7
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          3
+        ],
+        [
+          0,
+          7
+        ],
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "prJm5xtP",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 55,
+      "pathCount": 9,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              1,
+              5
+            ],
+            [
+              7,
+              0
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              2,
+              6
+            ],
+            [
+              3,
+              2
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              5,
+              3
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              1,
+              0
+            ],
+            [
+              3,
+              7
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          7
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          5,
+          7
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "SELosHxJ",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 34,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              1,
+              3
+            ],
+            [
+              4,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              6,
+              2
+            ],
+            [
+              1,
+              5
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              0,
+              3
+            ],
+            [
+              6,
+              4
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              0,
+              7
+            ],
+            [
+              4,
+              3
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          5,
+          4
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          6,
+          6
+        ]
+      ]
+    },
+    {
+      "id": "RcXHj5Tq",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 54,
+      "pathCount": 9,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              2,
+              4
+            ],
+            [
+              2,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              3,
+              3
+            ],
+            [
+              1,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              0,
+              6
+            ],
+            [
+              7,
+              4
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              0,
+              4
+            ],
+            [
+              6,
+              6
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          7,
+          0
+        ],
+        [
+          7,
+          1
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          0,
+          7
+        ],
+        [
+          4,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "wU6kzYLo",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 53,
+      "pathCount": 100,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              4,
+              6
+            ],
+            [
+              7,
+              0
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              6,
+              2
+            ],
+            [
+              2,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              7,
+              7
+            ],
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              7,
+              4
+            ],
+            [
+              1,
+              5
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          5,
+          3
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          7,
+          6
+        ],
+        [
+          0,
+          7
+        ],
+        [
+          1,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "GoPjfPgo",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 608,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              7,
+              5
+            ],
+            [
+              1,
+              0
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              5,
+              5
+            ],
+            [
+              6,
+              0
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              3,
+              4
+            ],
+            [
+              7,
+              1
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              6,
+              5
+            ],
+            [
+              5,
+              0
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          6,
+          3
+        ]
+      ]
+    },
+    {
+      "id": "PLpr9lwi",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 11,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              0,
+              0
+            ],
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              2,
+              0
+            ],
+            [
+              1,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              1,
+              6
+            ],
+            [
+              4,
+              2
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              6,
+              1
+            ],
+            [
+              0,
+              4
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "jjwpXytc",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 241,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              4,
+              6
+            ],
+            [
+              6,
+              1
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              1,
+              1
+            ],
+            [
+              6,
+              2
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              7,
+              0
+            ],
+            [
+              2,
+              5
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              3,
+              0
+            ],
+            [
+              6,
+              4
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          2,
+          1
+        ],
+        [
+          5,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          7,
+          6
+        ],
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "FzOaTYR8",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 18,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              4,
+              2
+            ],
+            [
+              0,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              2,
+              5
+            ],
+            [
+              2,
+              0
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              1,
+              0
+            ],
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              3,
+              2
+            ],
+            [
+              0,
+              6
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ]
+      ]
+    },
+    {
+      "id": "e18Oy1n9",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 3672,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              4,
+              5
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              0,
+              1
+            ],
+            [
+              7,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              1,
+              2
+            ],
+            [
+              5,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              3,
+              2
+            ],
+            [
+              0,
+              2
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          4
+        ]
+      ]
+    },
+    {
+      "id": "yPEW1VuE",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 54,
+      "pathCount": 147,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              4,
+              4
+            ],
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              0,
+              3
+            ],
+            [
+              3,
+              2
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              0,
+              5
+            ],
+            [
+              2,
+              0
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              3,
+              6
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          1,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          6
+        ]
+      ]
+    },
+    {
+      "id": "1kPDucdL",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 375,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              4,
+              4
+            ],
+            [
+              0,
+              1
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              0,
+              3
+            ],
+            [
+              5,
+              2
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              3,
+              2
+            ],
+            [
+              0,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              0,
+              0
+            ],
+            [
+              2,
+              7
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          1,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "cHAV9Ab7",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 540,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              2,
+              7
+            ],
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              5,
+              2
+            ],
+            [
+              1,
+              5
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              0,
+              0
+            ],
+            [
+              4,
+              6
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              7,
+              7
+            ],
+            [
+              0,
+              2
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          6
+        ]
+      ]
+    },
+    {
+      "id": "uRUKs6zY",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 218,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              2,
+              1
+            ],
+            [
+              0,
+              6
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              0,
+              2
+            ],
+            [
+              5,
+              6
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              1,
+              6
+            ],
+            [
+              1,
+              2
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              0,
+              5
+            ],
+            [
+              4,
+              3
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          1,
+          1
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          5,
+          7
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "jZf22aZl",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 53,
+      "pathCount": 122,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              4,
+              6
+            ],
+            [
+              0,
+              2
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              5,
+              3
+            ],
+            [
+              0,
+              4
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              1,
+              2
+            ],
+            [
+              4,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              5,
+              2
+            ],
+            [
+              2,
+              6
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "zWsIe0La",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 56,
+      "pathCount": 9,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              7,
+              4
+            ],
+            [
+              4,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              5,
+              6
+            ],
+            [
+              6,
+              1
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              3,
+              4
+            ],
+            [
+              7,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              5,
+              3
+            ],
+            [
+              7,
+              6
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "BJL3RWmd",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 54,
+      "pathCount": 25,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              3,
+              6
+            ],
+            [
+              4,
+              1
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              7,
+              7
+            ],
+            [
+              3,
+              4
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              7,
+              4
+            ],
+            [
+              3,
+              5
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              3,
+              3
+            ],
+            [
+              5,
+              7
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          6,
+          0
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          7,
+          6
+        ],
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "jkN2NFAn",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 1785,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              0,
+              0
+            ],
+            [
+              4,
+              6
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              4,
+              2
+            ],
+            [
+              1,
+              6
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              2
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              0,
+              4
+            ],
+            [
+              7,
+              6
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          7,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          7,
+          1
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          7,
+          5
+        ]
+      ]
+    },
+    {
+      "id": "5alCiwPA",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 53,
+      "pathCount": 12,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              3,
+              4
+            ],
+            [
+              7,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              5,
+              4
+            ],
+            [
+              7,
+              2
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              7,
+              0
+            ],
+            [
+              5,
+              5
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              5,
+              1
+            ],
+            [
+              5,
+              6
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          6,
+          1
+        ],
+        [
+          7,
+          1
+        ],
+        [
+          6,
+          4
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          7,
+          6
+        ],
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "47F5Mhv1",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 54,
+      "pathCount": 27,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              6,
+              1
+            ],
+            [
+              2,
+              5
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              6,
+              2
+            ],
+            [
+              4,
+              1
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              4,
+              5
+            ],
+            [
+              5,
+              0
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              7,
+              6
+            ],
+            [
+              4,
+              0
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          6,
+          6
+        ]
+      ]
+    },
+    {
+      "id": "a42TDHMF",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 459,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              1,
+              6
+            ],
+            [
+              7,
+              6
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              4,
+              7
+            ],
+            [
+              3,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              5,
+              5
+            ],
+            [
+              2,
+              6
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              0,
+              1
+            ],
+            [
+              6,
+              6
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          7,
+          0
+        ],
+        [
+          7,
+          1
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          7,
+          5
+        ]
+      ]
+    },
+    {
+      "id": "SoxDuDnr",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 55,
+      "pathCount": 5,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              3,
+              3
+            ],
+            [
+              7,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              5,
+              7
+            ],
+            [
+              5,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              6,
+              5
+            ],
+            [
+              2,
+              5
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              7,
+              4
+            ],
+            [
+              3,
+              7
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          4,
+          5
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          6,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "yrQql7c6",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 54,
+      "pathCount": 27,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              6,
+              3
+            ],
+            [
+              1,
+              4
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              1,
+              0
+            ],
+            [
+              5,
+              5
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              3,
+              4
+            ],
+            [
+              7,
+              1
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              6,
+              0
+            ],
+            [
+              4,
+              4
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          2,
+          0
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          3
+        ]
+      ]
+    },
+    {
+      "id": "V7EoUj3N",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 696,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              3,
+              1
+            ],
+            [
+              1,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              0,
+              0
+            ],
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              6,
+              1
+            ],
+            [
+              1,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              0,
+              1
+            ],
+            [
+              6,
+              2
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "8sfyuxPY",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 54,
+      "pathCount": 4,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              3,
+              3
+            ],
+            [
+              7,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              6,
+              4
+            ],
+            [
+              2,
+              6
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              7,
+              6
+            ],
+            [
+              3,
+              5
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              6,
+              1
+            ],
+            [
+              5,
+              7
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          7,
+          0
+        ],
+        [
+          7,
+          1
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          3,
+          6
+        ]
+      ]
+    },
+    {
+      "id": "gCaNHoyW",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 55,
+      "pathCount": 147,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              1,
+              4
+            ],
+            [
+              5,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              0,
+              5
+            ],
+            [
+              4,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              3,
+              1
+            ],
+            [
+              0,
+              6
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              1,
+              3
+            ],
+            [
+              2,
+              6
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "wS5qGWhF",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 53,
+      "pathCount": 16,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              0,
+              4
+            ],
+            [
+              4,
+              5
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              3,
+              7
+            ],
+            [
+              1,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              0,
+              3
+            ],
+            [
+              4,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              0,
+              5
+            ],
+            [
+              4,
+              3
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          0,
+          7
+        ],
+        [
+          1,
+          7
+        ],
+        [
+          2,
+          7
+        ],
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "Ws2gM7EV",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 18,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              0,
+              3
+            ],
+            [
+              5,
+              4
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              7,
+              1
+            ],
+            [
+              2,
+              5
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              5,
+              6
+            ],
+            [
+              3,
+              0
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              6,
+              7
+            ],
+            [
+              3,
+              3
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          5,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "5jWAtWOY",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 320,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              7,
+              2
+            ],
+            [
+              1,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              3,
+              1
+            ],
+            [
+              3,
+              6
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              7,
+              3
+            ],
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              1,
+              0
+            ],
+            [
+              4,
+              3
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          0,
+          7
+        ],
+        [
+          1,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "YuwHWfsT",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 1140,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              4,
+              3
+            ],
+            [
+              0,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              3,
+              6
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              4,
+              4
+            ],
+            [
+              1,
+              6
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              3,
+              7
+            ],
+            [
+              3,
+              3
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "id": "NcElzp7G",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 55,
+      "pathCount": 20,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              5,
+              1
+            ],
+            [
+              2,
+              0
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              4,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              0,
+              0
+            ],
+            [
+              7,
+              1
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              3,
+              0
+            ],
+            [
+              4,
+              4
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          1,
+          0
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "0OsuZkG1",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 350,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              7,
+              6
+            ],
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              0,
+              7
+            ],
+            [
+              6,
+              5
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              6,
+              2
+            ],
+            [
+              3,
+              6
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              4,
+              6
+            ],
+            [
+              3,
+              0
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "STY7L4MV",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 54,
+      "pathCount": 210,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              6,
+              6
+            ],
+            [
+              5,
+              0
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              2,
+              2
+            ],
+            [
+              7,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              3,
+              2
+            ],
+            [
+              7,
+              7
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              7,
+              0
+            ],
+            [
+              3,
+              4
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          6,
+          0
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          5,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          5,
+          2
+        ]
+      ]
+    },
+    {
+      "id": "XFLLli9X",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 546,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              0,
+              0
+            ],
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              6,
+              5
+            ],
+            [
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              0,
+              5
+            ],
+            [
+              5,
+              1
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              0,
+              3
+            ],
+            [
+              6,
+              1
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          1,
+          6
+        ]
+      ]
+    },
+    {
+      "id": "BNEKvq0y",
+      "width": 8,
+      "height": 8,
+      "minPathLen": 52,
+      "pathCount": 9252,
+      "minPathCount": 1,
+      "pairs": [
+        {
+          "color": 0,
+          "positions": [
+            [
+              1,
+              6
+            ],
+            [
+              5,
+              3
+            ]
+          ]
+        },
+        {
+          "color": 1,
+          "positions": [
+            [
+              2,
+              7
+            ],
+            [
+              6,
+              1
+            ]
+          ]
+        },
+        {
+          "color": 2,
+          "positions": [
+            [
+              7,
+              7
+            ],
+            [
+              0,
+              4
+            ]
+          ]
+        },
+        {
+          "color": 3,
+          "positions": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              7
+            ]
+          ]
+        }
+      ],
+      "obstacles": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          4,
+          5
+        ]
+      ]
+    }
+  ]
+}
