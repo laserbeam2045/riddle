@@ -88,6 +88,8 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
   const audioContext = useRef<AudioContext | null>(null);
   const currentSlideSource = useRef<AudioBufferSourceNode | null>(null);
+  const lastFillSoundTime = useRef<number>(0);
+  const lastCorrectSoundTime = useRef<number>(0);
 
   const MAZE_SIZE = 11;
   const CELL_SIZE = 40;
@@ -211,6 +213,12 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
     loadStages();
   }, []);
 
+  // ステージ変更時に音声重複防止フラグをリセット
+  useEffect(() => {
+    lastFillSoundTime.current = 0;
+    lastCorrectSoundTime.current = 0;
+  }, [currentStage]);
+
   // Web Audio API用のslide音再生関数
   const playSlideWithWebAudio = useCallback(() => {
     if (!soundEnabled) return;
@@ -320,6 +328,24 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
 
       const src = soundFiles[soundKey as keyof typeof soundFiles];
       if (src) {
+        // fill音の重複再生を防ぐ
+        if (soundKey === "fill") {
+          const now = Date.now();
+          if (now - lastFillSoundTime.current < 150) {
+            return; // 150ms以内の連続再生をブロック
+          }
+          lastFillSoundTime.current = now;
+        }
+
+        // correct音の重複再生を防ぐ
+        if (soundKey === "correct") {
+          const now = Date.now();
+          if (now - lastCorrectSoundTime.current < 500) {
+            return; // 500ms以内の連続再生をブロック
+          }
+          lastCorrectSoundTime.current = now;
+        }
+
         try {
           const audio = new Audio(src);
           audio.volume = 0.3;
@@ -363,6 +389,9 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
 
       // ヒント再生中はクリア判定しない
       if (isPlayingHint) return;
+
+      // 既にクリア済みの場合は処理しない
+      if (gameState.isCompleted) return;
 
       const piecesToCheck = newPieces || gameState.pieces;
 
@@ -564,22 +593,26 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
               [pieceId]: [newX, newY] as [number, number],
             };
 
-            setGameState((prev) => ({
-              ...prev,
-              pieces: updatedPieces,
-              moves: prev.moves + 1,
-            }));
+            setGameState((prev) => {
+              const newMoves = prev.moves + 1;
 
-            // 操作終了音を再生
-            playSound("fill");
+              // 操作終了音を再生
+              playSound("fill");
 
-            // 履歴に追加
-            const newState: GameState = {
-              pieces: updatedPieces,
-              moves: gameState.moves + 1,
-              isCompleted: false,
-            };
-            addToHistory(newState);
+              // 履歴に追加
+              const newState: GameState = {
+                pieces: updatedPieces,
+                moves: newMoves,
+                isCompleted: false,
+              };
+              addToHistory(newState);
+
+              return {
+                ...prev,
+                pieces: updatedPieces,
+                moves: newMoves,
+              };
+            });
 
             // 勝利条件チェック（新しい位置で）
             setTimeout(() => {
@@ -1196,6 +1229,9 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
               className="puzzle-button hint-button"
               onClick={() => {
                 playSound("decision");
+                // 音声重複防止フラグをリセット
+                lastFillSoundTime.current = 0;
+                lastCorrectSoundTime.current = 0;
                 if (currentStage) {
                   const resetState = {
                     pieces: convertPositions(currentStage.startPositions),
@@ -1536,6 +1572,9 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
             <button
               onClick={() => {
                 playSound("decision");
+                // 音声重複防止フラグをリセット
+                lastFillSoundTime.current = 0;
+                lastCorrectSoundTime.current = 0;
                 // リセット時にスタート状態に戻す
                 if (currentStage) {
                   const resetState = {
