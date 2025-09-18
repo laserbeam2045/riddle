@@ -231,13 +231,16 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
     }
   }, []);
 
-  // Web Audio API用のslide音再生関数
+  // slide音再生関数（モバイル・Safari対応強化）
   const playSlideWithWebAudio = useCallback(() => {
     if (!soundEnabled || !isAudioUnlocked) return;
 
-    // Safari対応: Web Audio APIの前にHTML5 Audioを試行
+    // モバイル・Safari判定を拡張
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    if (isSafari) {
+
+    // モバイルまたはSafariの場合は、Web Audio APIを完全にスキップしてHTML5 Audioのみ使用
+    if (isMobile || isSafari) {
       try {
         // 前のslide音があれば停止
         if (currentSlideAudio.current) {
@@ -256,20 +259,18 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
         const playPromise = audio.play();
         if (playPromise !== undefined) {
           playPromise.then(() => {
-            console.log("Safari HTML5 audio played successfully");
+            console.log("Mobile/Safari HTML5 audio played successfully");
           }).catch((error) => {
-            console.log("Safari HTML5 audio failed:", error);
-            // Safari HTML5 Audioが失敗した場合のみWeb Audio APIを試行
+            console.log("Mobile/Safari HTML5 audio failed:", error);
+            // モバイル/Safariでは失敗しても無理にWeb Audio APIは使わない
             currentSlideAudio.current = null;
-            playWebAudioFallback();
           });
         }
         return;
       } catch (error) {
-        console.log("Safari HTML5 audio error:", error);
+        console.log("Mobile/Safari HTML5 audio error:", error);
         currentSlideAudio.current = null;
-        // エラー時はWeb Audio APIにフォールバック
-        playWebAudioFallback();
+        // モバイル/Safariではエラー時もWeb Audio APIは使わない
         return;
       }
     }
@@ -419,6 +420,18 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
 
   // 音声アンロック関数（Touch to start用）
   const unlockAudio = useCallback(() => {
+    // モバイル・Safari判定
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+    // モバイル/SafariではWeb Audio APIを完全にスキップ
+    if (isMobile || isSafari) {
+      console.log("Mobile/Safari detected - skipping Web Audio API");
+      setIsAudioUnlocked(true);
+      return;
+    }
+
+    // デスクトップ環境でのみWeb Audio APIを使用
     if (!audioContext.current || audioContext.current.state === 'closed') {
       try {
         const AudioContextClass =
@@ -445,22 +458,6 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           .resume()
           .then(() => {
             console.log("AudioContext resumed successfully!");
-
-            // Safari対応: テスト音を再生してAudioContextを確実にアクティブ化
-            try {
-              const testOsc = audioContext.current!.createOscillator();
-              const testGain = audioContext.current!.createGain();
-              testOsc.connect(testGain);
-              testGain.connect(audioContext.current!.destination);
-              testGain.gain.value = 0; // 無音
-              testOsc.frequency.value = 440;
-              testOsc.start();
-              testOsc.stop(audioContext.current!.currentTime + 0.1);
-              console.log("Test sound played for Safari compatibility");
-            } catch (testError) {
-              console.log("Test sound failed:", testError);
-            }
-
             setIsAudioUnlocked(true);
           })
           .catch((e) => {
@@ -469,22 +466,6 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           });
       } else if (audioContext.current.state === "running") {
         console.log("AudioContext already running.");
-
-        // Safari対応: 既に実行中でもテスト音を再生
-        try {
-          const testOsc = audioContext.current.createOscillator();
-          const testGain = audioContext.current.createGain();
-          testOsc.connect(testGain);
-          testGain.connect(audioContext.current.destination);
-          testGain.gain.value = 0; // 無音
-          testOsc.frequency.value = 440;
-          testOsc.start();
-          testOsc.stop(audioContext.current.currentTime + 0.1);
-          console.log("Test sound played for Safari compatibility");
-        } catch (testError) {
-          console.log("Test sound failed:", testError);
-        }
-
         setIsAudioUnlocked(true);
       }
     }
@@ -493,21 +474,6 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   // Touch to startハンドラー
   const handleForceClicker = useCallback(() => {
     unlockAudio();
-
-    // Safari対応: HTML5 Audioでもテスト音を再生
-    setTimeout(() => {
-      try {
-        const testAudio = new Audio("/sounds/decision.mp3");
-        testAudio.volume = 0.1;
-        testAudio.play().then(() => {
-          console.log("Safari test HTML5 audio played");
-        }).catch((error) => {
-          console.log("Safari test HTML5 audio failed:", error);
-        });
-      } catch (error) {
-        console.log("Safari test HTML5 audio error:", error);
-      }
-    }, 100);
   }, [unlockAudio]);
 
   // 音声再生関数
