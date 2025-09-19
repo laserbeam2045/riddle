@@ -56,7 +56,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
     playAudioSafe,
     unlockAudio,
     isAudioUnlocked,
-  } = useAudio(0.03);
+  } = useAudio(0.05);
 
   // 音声再生ヘルパー関数
   const playGameAudio = (fileName: string, volume?: number) => {
@@ -69,7 +69,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   const playJupiterSafe = useCallback(() => {
     if (soundEnabled) {
       // stopAudio("Jupiter");
-      playAudioSafe("Jupiter", 0.002);
+      playAudioSafe("Jupiter", 0.01);
     }
   }, [soundEnabled, playAudioSafe]);
 
