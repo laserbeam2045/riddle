@@ -69,7 +69,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
   const playJupiterSafe = useCallback(() => {
     if (soundEnabled) {
       // stopAudio("Jupiter");
-      playAudioSafe("Jupiter", 0.005);
+      playAudioSafe("Jupiter", 0.004);
     }
   }, [soundEnabled, playAudioSafe]);
 
