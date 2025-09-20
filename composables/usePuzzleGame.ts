@@ -25,8 +25,8 @@ export interface Stage {
   verified?: boolean;
 }
 
-const MAZE_SIZE = 7;
-const CLEARED_STAGES_KEY = "sliding_puzzle_cleared_stages4";
+const MAZE_SIZE = 9;
+const CLEARED_STAGES_KEY = "sliding_puzzle_cleared_stages5";
 
 export const usePuzzleGame = () => {
   const [stages, setStages] = useState<Stage[]>([]);
