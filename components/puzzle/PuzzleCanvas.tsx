@@ -65,7 +65,7 @@ const PuzzleCanvas: React.FC<PuzzleCanvasProps> = ({
           // ctx.fillStyle = "#f7fafc";
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-          ctx.strokeStyle = "#e2e8f0";
+          ctx.strokeStyle = "#c0c0c0";
           ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
         }
       }
@@ -104,7 +104,7 @@ const PuzzleCanvas: React.FC<PuzzleCanvasProps> = ({
     // 駒を描画
     Object.entries(pieces).forEach(([pieceId, [x, y]]) => {
       const id = parseInt(pieceId);
-      const isSelected = selectedPiece === id;
+      // const isSelected = selectedPiece === id;
       const pieceImage = pieceImages[id];
 
       // アニメーション中の位置計算
@@ -127,10 +127,14 @@ const PuzzleCanvas: React.FC<PuzzleCanvasProps> = ({
       const drawX = renderX * cellSize;
       const drawY = renderY * cellSize;
 
+      const goalColor = "#00ffd5";
+      // const goalColor = "#ffffff";
+      const borderColor = "#c0c0c0";
+
       // ゴール位置にある駒に発光エフェクトを追加
       if (isAtGoal) {
         ctx.save();
-        ctx.shadowColor = "#10b981";
+        ctx.shadowColor = goalColor;
         ctx.shadowBlur = 12;
         ctx.shadowOffsetX = 0;
         ctx.shadowOffsetY = 0;
@@ -156,12 +160,40 @@ const PuzzleCanvas: React.FC<PuzzleCanvasProps> = ({
         ctx.restore();
       }
 
-      // 選択状態の表示
-      if (isSelected) {
-        ctx.strokeStyle = "#ffd700";
-        ctx.lineWidth = 3;
-        ctx.strokeRect(drawX - 0.0, drawY - 0.0, cellSize + 1, cellSize + 1);
+      // 二重ボーダーの描画
+      const borderGap = 1; // ボーダー間の隙間（ピクセル）
+      const outerBorderWidth = 1;
+      const innerBorderWidth = 1;
+
+      // 外側のボーダー
+      ctx.strokeStyle = isAtGoal ? goalColor : borderColor;
+      ctx.lineWidth = outerBorderWidth;
+      ctx.strokeRect(
+        drawX + borderGap,
+        drawY + borderGap,
+        cellSize - borderGap * 2,
+        cellSize - borderGap * 2
+      );
+
+      if (isAtGoal) {
+        // 内側のボーダー
+        ctx.strokeStyle = isAtGoal ? goalColor : borderColor;
+        ctx.lineWidth = innerBorderWidth;
+        const innerOffset = outerBorderWidth + borderGap;
+        ctx.strokeRect(
+          drawX + innerOffset + outerBorderWidth + borderGap,
+          drawY + innerOffset + outerBorderWidth + borderGap,
+          cellSize - innerOffset * 2 - outerBorderWidth * 2 - borderGap * 2,
+          cellSize - innerOffset * 2 - outerBorderWidth * 2 - borderGap * 2
+        );
       }
+
+      // // 選択状態の表示
+      // if (isSelected) {
+      //   ctx.strokeStyle = "#00ffd5";
+      //   ctx.lineWidth = 3;
+      //   ctx.strokeRect(drawX - 1.5, drawY - 1.5, cellSize + 3, cellSize + 3);
+      // }
     });
   }, [
     maze,
