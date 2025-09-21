@@ -26,7 +26,7 @@ export interface Stage {
 }
 
 const MAZE_SIZE = 9;
-const CLEARED_STAGES_KEY = "sliding_puzzle_cleared_stages5";
+const CLEARED_STAGES_KEY = "sliding_puzzle_cleared_stages6";
 
 export const usePuzzleGame = () => {
   const [stages, setStages] = useState<Stage[]>([]);
@@ -216,7 +216,7 @@ export const usePuzzleGame = () => {
   useEffect(() => {
     const loadStages = async () => {
       try {
-        const response = await fetch("/sliding_puzzle_stages.json");
+        const response = await fetch("/sliding_puzzle_stages2.json");
         if (!response.ok) throw new Error("Failed to load stages");
         const data = await response.json();
         setStages(data);
