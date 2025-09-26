@@ -10,7 +10,10 @@ interface ClearModalProps {
   onNextStage: () => void;
   onStageSelect: () => void;
   hasNextStage: boolean;
-  getStarRating: (stageId: number, optimalMoves: number) => { stars: number; perfect: boolean } | null;
+  getStarRating: (
+    stageId: number,
+    optimalMoves: number
+  ) => { stars: number; perfect: boolean } | null;
 }
 
 const ClearModal: React.FC<ClearModalProps> = ({
@@ -20,7 +23,6 @@ const ClearModal: React.FC<ClearModalProps> = ({
   onNextStage,
   onStageSelect,
   hasNextStage,
-  getStarRating,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -29,7 +31,7 @@ const ClearModal: React.FC<ClearModalProps> = ({
     const fireConfetti = () => {
       const count = 200;
       const defaults = {
-        origin: { y: 0.7 }
+        origin: { y: 0.7 },
       };
 
       function fire(particleRatio: number, opts: confetti.Options) {
@@ -75,14 +77,14 @@ const ClearModal: React.FC<ClearModalProps> = ({
           angle: 60,
           spread: 55,
           origin: { x: 0, y: 0.8 },
-          colors: ['#FFD700', '#FFA500', '#FF6347', '#9370DB', '#4B0082']
+          colors: ["#FFD700", "#FFA500", "#FF6347", "#9370DB", "#4B0082"],
         });
         confetti({
           particleCount: 50,
           angle: 120,
           spread: 55,
           origin: { x: 1, y: 0.8 },
-          colors: ['#FFD700', '#FFA500', '#FF6347', '#9370DB', '#4B0082']
+          colors: ["#FFD700", "#FFA500", "#FF6347", "#9370DB", "#4B0082"],
         });
       }, 300);
     };
@@ -101,10 +103,7 @@ const ClearModal: React.FC<ClearModalProps> = ({
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
       {/* モーダル */}
-      <div
-        ref={modalRef}
-        className="relative w-full max-w-md mx-auto"
-      >
+      <div ref={modalRef} className="relative w-full max-w-md mx-auto">
         {/* グラスモーフィズムコンテナ */}
         <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-3xl p-8 shadow-2xl transform animate-pulse-scale">
           {/* 成功アイコン */}
@@ -124,9 +123,7 @@ const ClearModal: React.FC<ClearModalProps> = ({
               <p className="text-xl font-semibold text-white/90 mb-1">
                 {currentStage?.name || `ステージ ${currentStage?.id}`}
               </p>
-              <p className="text-lg text-yellow-300 font-bold">
-                手数: {moves}
-              </p>
+              <p className="text-lg text-yellow-300 font-bold">手数: {moves}</p>
             </div>
 
             {/* 星の表示 */}
@@ -134,8 +131,10 @@ const ClearModal: React.FC<ClearModalProps> = ({
               <StarRating
                 rating={(() => {
                   const optimalMoves = currentStage?.optimalMoves || 0;
-                  if (moves === optimalMoves) return { stars: 3, perfect: true };
-                  if (moves <= optimalMoves + 2) return { stars: 2, perfect: false };
+                  if (moves === optimalMoves)
+                    return { stars: 3, perfect: true };
+                  if (moves <= optimalMoves + 2)
+                    return { stars: 2, perfect: false };
                   return { stars: 1, perfect: false };
                 })()}
                 className="text-2xl"
