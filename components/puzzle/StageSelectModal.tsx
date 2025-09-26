@@ -1,13 +1,18 @@
 import React from "react";
 import { Stage } from "../../composables/usePuzzleGame";
+import StarRating from "../ui/StarRating";
 
 interface StageSelectModalProps {
   stages: Stage[];
-  clearedStages: Set<number>;
+  clearedStages: Map<number, { moves: number; timestamp: number }>;
   currentStage: Stage | null;
   onStageSelect: (stage: Stage) => void;
   onClose: () => void;
   onPlayAudio: (sound: string) => void;
+  getStarRating: (
+    stageId: number,
+    optimalMoves: number
+  ) => { stars: number; perfect: boolean } | null;
 }
 
 const StageSelectModal: React.FC<StageSelectModalProps> = ({
@@ -17,6 +22,7 @@ const StageSelectModal: React.FC<StageSelectModalProps> = ({
   onStageSelect,
   onClose,
   onPlayAudio,
+  getStarRating,
 }) => {
   return (
     <div
@@ -78,20 +84,13 @@ const StageSelectModal: React.FC<StageSelectModalProps> = ({
                       <div className="stage-status">
                         {isCleared && (
                           <span className="cleared-indicator">
-                            <span className="star-icon">
-                              {(() => {
-                                // 8つごとに星の数を決める
-                                if (index < 8) return "★☆☆☆☆☆☆☆"; // 1-8: 1星
-                                if (index < 16) return "★★☆☆☆☆☆☆"; // 9-16: 2星
-                                if (index < 24) return "★★★☆☆☆☆☆"; // 17-24: 3星
-                                if (index < 32) return "★★★★☆☆☆☆"; // 25-32: 4星
-                                if (index < 40) return "★★★★★☆☆☆"; // 33-40: 5星
-                                if (index < 48) return "★★★★★★☆☆"; // 41-48: 6星
-                                if (index < 56) return "★★★★★★★☆"; // 49-56: 7星
-                                return "★★★★★★★★"; // 57-64: 8星
-                              })()}
-                            </span>
-                            クリア済
+                            <span className="mr-2">クリア済</span>
+                            <StarRating
+                              rating={getStarRating(
+                                stage.id,
+                                stage.optimalMoves || 0
+                              )}
+                            />
                           </span>
                         )}
                         {!isCleared && !isCurrentStage && (

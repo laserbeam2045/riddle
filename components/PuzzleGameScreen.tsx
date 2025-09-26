@@ -207,7 +207,7 @@ const PuzzleGameScreen: React.FC<PuzzleGameScreenProps> = () => {
           audioContextRef.current
             .resume()
             .then(() => {
-              console.log("AudioContext resumed successfully.");
+              // console.log("AudioContext resumed successfully.");
               // Optionally retry playing the sound here
             })
             .catch((resumeError) => {
@@ -237,12 +237,12 @@ const PuzzleGameScreen: React.FC<PuzzleGameScreenProps> = () => {
         audioContextRef.current
           .resume()
           .then(() => {
-            console.log("AudioContext resumed!");
+            // console.log("AudioContext resumed!");
             setIsAudioUnlocked(true); // Set unlocked state only after successful resume
           })
           .catch((e) => console.error("Error resuming AudioContext:", e));
       } else if (audioContextRef.current.state === "running") {
-        console.log("AudioContext already running.");
+        // console.log("AudioContext already running.");
         setIsAudioUnlocked(true); // Already running, so consider it unlocked
       }
     }
@@ -292,7 +292,7 @@ const PuzzleGameScreen: React.FC<PuzzleGameScreenProps> = () => {
 
   const initGame = useCallback(
     (stage: Stage) => {
-      console.log("Initializing stage:", stage);
+      // console.log("Initializing stage:", stage);
       effectState.current = "none";
       setCurrentStage(stage);
       currentStageRef.current = stage; // Update ref immediately

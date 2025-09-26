@@ -28,6 +28,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
     resetGame,
     selectStage,
     updatePiecePosition,
+    getStarRating,
     MAZE_SIZE,
   } = usePuzzleGame();
 
@@ -583,6 +584,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
           onPlayAudio={(sound) => {
             playGameAudio(sound);
           }}
+          getStarRating={getStarRating}
         />
       )}
 
@@ -664,6 +666,7 @@ const SlidingPuzzleScreen: React.FC<SlidingPuzzleScreenProps> = () => {
             currentStage.id < stages.length &&
             stages.some((s) => s.id === currentStage.id + 1)
           }
+          getStarRating={getStarRating}
         />
       )}
 

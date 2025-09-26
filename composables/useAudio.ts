@@ -77,7 +77,7 @@ export const useAudio = (defaultVolume: number = 1.0): AudioHook => {
           globalAudioContext
             .resume()
             .then(() => {
-              console.log('AudioContext resumed successfully.');
+              // console.log('AudioContext resumed successfully.');
             })
             .catch((resumeError) => {
               console.error('Failed to resume AudioContext:', resumeError);
@@ -118,13 +118,13 @@ export const useAudio = (defaultVolume: number = 1.0): AudioHook => {
         globalAudioContext
           .resume()
           .then(() => {
-            console.log('AudioContext resumed!');
+            // console.log('AudioContext resumed!');
             globalIsAudioUnlocked = true;
             setIsAudioUnlocked(true);
           })
           .catch((e) => console.error('Error resuming AudioContext:', e));
       } else if (globalAudioContext.state === 'running') {
-        console.log('AudioContext already running.');
+        // console.log('AudioContext already running.');
         globalIsAudioUnlocked = true;
         setIsAudioUnlocked(true);
       }

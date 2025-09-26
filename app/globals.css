@@ -1220,3 +1220,15 @@ position: relative;
   border-radius: 10px;
   border: 1px solid rgba(255, 215, 0, 0.2);
 }
+
+/* 虹色アニメーション */
+@keyframes rainbow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes rainbow-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}

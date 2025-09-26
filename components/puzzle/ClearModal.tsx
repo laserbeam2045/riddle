@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import confetti from "canvas-confetti";
 import { Stage } from "../../composables/usePuzzleGame";
+import StarRating from "../ui/StarRating";
 
 interface ClearModalProps {
   currentStage: Stage | null;
@@ -9,6 +10,7 @@ interface ClearModalProps {
   onNextStage: () => void;
   onStageSelect: () => void;
   hasNextStage: boolean;
+  getStarRating: (stageId: number, optimalMoves: number) => { stars: number; perfect: boolean } | null;
 }
 
 const ClearModal: React.FC<ClearModalProps> = ({
@@ -18,6 +20,7 @@ const ClearModal: React.FC<ClearModalProps> = ({
   onNextStage,
   onStageSelect,
   hasNextStage,
+  getStarRating,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -128,34 +131,15 @@ const ClearModal: React.FC<ClearModalProps> = ({
 
             {/* 星の表示 */}
             <div className="flex justify-center mb-4">
-              {Array.from({ length: 3 }, (_, i) => {
-                const optimalMoves = currentStage?.optimalMoves || 0;
-                let earnedStars = 1; // デフォルトは1つ星
-
-                if (optimalMoves > 0) {
-                  if (moves <= optimalMoves) {
-                    earnedStars = 3; // 最短手数なら3つ星
-                  } else if (moves <= optimalMoves + 2) {
-                    earnedStars = 2; // 最短手数+2以内なら2つ星
-                  }
-                }
-
-                return (
-                  <div
-                    key={i}
-                    className={`mx-1 text-2xl transform transition-all duration-500 ${
-                      i < earnedStars
-                        ? "text-yellow-400 animate-spin-slow"
-                        : "text-gray-400"
-                    }`}
-                    style={{
-                      animationDelay: `${i * 0.2}s`,
-                    }}
-                  >
-                    ⭐
-                  </div>
-                );
-              })}
+              <StarRating
+                rating={(() => {
+                  const optimalMoves = currentStage?.optimalMoves || 0;
+                  if (moves === optimalMoves) return { stars: 3, perfect: true };
+                  if (moves <= optimalMoves + 2) return { stars: 2, perfect: false };
+                  return { stars: 1, perfect: false };
+                })()}
+                className="text-2xl"
+              />
             </div>
           </div>
 

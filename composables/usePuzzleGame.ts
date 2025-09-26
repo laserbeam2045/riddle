@@ -26,7 +26,12 @@ export interface Stage {
 }
 
 const MAZE_SIZE = 9;
-const CLEARED_STAGES_KEY = "sliding_puzzle_cleared_stages7";
+const CLEARED_STAGES_KEY = "sliding_puzzle_cleared_stages8";
+
+interface StageRecord {
+  moves: number;
+  timestamp: number;
+}
 
 export const usePuzzleGame = () => {
   const [stages, setStages] = useState<Stage[]>([]);
@@ -39,7 +44,7 @@ export const usePuzzleGame = () => {
   const [gameHistory, setGameHistory] = useState<GameState[]>([]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(true);
-  const [clearedStages, setClearedStages] = useState<Set<number>>(new Set());
+  const [clearedStages, setClearedStages] = useState<Map<number, StageRecord>>(new Map());
 
   // ステージの位置データを適切な型に変換するヘルパー関数
   const convertPositions = useCallback((positions: {
@@ -54,28 +59,35 @@ export const usePuzzleGame = () => {
   }, []);
 
   // LocalStorageからクリア済みステージを読み込む
-  const loadClearedStages = useCallback((): Set<number> => {
-    if (typeof window === "undefined") return new Set();
+  const loadClearedStages = useCallback((): Map<number, StageRecord> => {
+    if (typeof window === "undefined") return new Map();
 
     try {
       const saved = localStorage.getItem(CLEARED_STAGES_KEY);
       if (saved) {
-        const stageArray = JSON.parse(saved) as number[];
-        return new Set(stageArray);
+        const stageData = JSON.parse(saved) as Record<string, StageRecord>;
+        const stageMap = new Map<number, StageRecord>();
+        Object.entries(stageData).forEach(([stageId, record]) => {
+          stageMap.set(parseInt(stageId), record);
+        });
+        return stageMap;
       }
     } catch (error) {
       console.error("Failed to load cleared stages from localStorage:", error);
     }
-    return new Set();
+    return new Map();
   }, []);
 
   // LocalStorageにクリア済みステージを保存する
-  const saveClearedStages = useCallback((stages: Set<number>) => {
+  const saveClearedStages = useCallback((stages: Map<number, StageRecord>) => {
     if (typeof window === "undefined") return;
 
     try {
-      const stageArray = Array.from(stages);
-      localStorage.setItem(CLEARED_STAGES_KEY, JSON.stringify(stageArray));
+      const stageObject: Record<string, StageRecord> = {};
+      stages.forEach((record, stageId) => {
+        stageObject[stageId.toString()] = record;
+      });
+      localStorage.setItem(CLEARED_STAGES_KEY, JSON.stringify(stageObject));
     } catch (error) {
       console.error("Failed to save cleared stages to localStorage:", error);
     }
@@ -117,14 +129,24 @@ export const usePuzzleGame = () => {
 
       if (isWin) {
         setGameState((prev) => ({ ...prev, isCompleted: true }));
-        // ステージクリア時にクリア済みステージに追加
+        // ステージクリア時にクリア手数を記録
         if (currentStage?.id) {
           setClearedStages((prev) => {
-            const newClearedStages = new Set(prev);
-            newClearedStages.add(currentStage.id);
-            if (currentStage.id < 64) {
-              // 次のステージをアンロック
+            const newClearedStages = new Map(prev);
+            const currentRecord = newClearedStages.get(currentStage.id);
+            const currentMoves = gameState.moves + 1; // 最後の移動を含める
+
+            // 既存記録がない場合、または今回の手数が少ない場合のみ更新
+            if (!currentRecord || currentMoves < currentRecord.moves) {
+              // console.log(`Recording stage ${currentStage.id} with ${currentMoves} moves (improved from ${currentRecord?.moves || 'none'})`);
+              newClearedStages.set(currentStage.id, {
+                moves: currentMoves,
+                timestamp: Date.now()
+              });
+            } else {
+              // console.log(`Stage ${currentStage.id}: Not updating record. Current: ${currentMoves}, Best: ${currentRecord.moves}`);
             }
+
             saveClearedStages(newClearedStages);
             return newClearedStages;
           });
@@ -184,6 +206,18 @@ export const usePuzzleGame = () => {
     setGameHistory([newState]);
     setCurrentHistoryIndex(0);
   }, [convertPositions]);
+
+  // 星評価を計算する
+  const getStarRating = useCallback((stageId: number, optimalMoves: number) => {
+    const record = clearedStages.get(stageId);
+    if (!record) return { stars: 0, perfect: false }; // 未クリア
+
+    const playerMoves = record.moves;
+    // console.log(`Stage ${stageId}: playerMoves=${playerMoves}, optimalMoves=${optimalMoves}, clearedStages:`, clearedStages);
+    if (playerMoves === optimalMoves) return { stars: 3, perfect: true }; // ★★★ + PERFECT
+    if (playerMoves <= optimalMoves + 2) return { stars: 2, perfect: false }; // ★★☆
+    return { stars: 1, perfect: false }; // ★☆☆
+  }, [clearedStages]);
 
   // 駒を移動させる
   const updatePiecePosition = useCallback(
@@ -261,6 +295,7 @@ export const usePuzzleGame = () => {
     resetGame,
     selectStage,
     updatePiecePosition,
+    getStarRating,
 
     // Constants
     MAZE_SIZE,
